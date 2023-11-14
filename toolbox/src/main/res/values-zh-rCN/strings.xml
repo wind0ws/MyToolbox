@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="toast_message">hi</string>
+    <string name="tip_grant_notification">请打开 \"允许通知\" 开关</string>
+    <string name="tip_no_permission_exit">没有获取权限，app即将退出...</string>
+</resources>

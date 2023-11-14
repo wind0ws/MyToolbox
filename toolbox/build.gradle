@@ -1,0 +1,126 @@
+apply plugin: 'com.android.library'
+
+apply plugin: 'kotlin-android'
+
+android {
+    namespace 'com.threshold.toolbox'
+    compileSdkVersion 28
+
+    defaultConfig {
+        minSdkVersion 14
+        targetSdkVersion 28
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_PLATFORM=android-19",
+                        "-DANDROID_ARM_NEON=TRUE",
+                        "-DANDROID_TOOLCHAIN=clang"
+                        "-DANDROID_STL=c++_static"
+//                "-DPRJ_VERSION_CODE=$svnRev",
+//                "-DPRJ_BUILD_TIME=$buildTimeStamp"
+                cFlags "-g -Wall"
+// -Wreturn-type-c-linkage -Wpointer-arith -ftrapv -fsanitize=undefined-trap -fsanitize-undefined-trap-on-error
+                cppFlags "-frtti -fexceptions -fpermissive -v"
+//                arguments "-DANDROID_STL=gnustl_static", "-DANDROID_TOOLCHAIN=clang", "-DANDROID_PLATFORM=android-21", "-DANDROID_ARM_NEON=TRUE"
+                //-g -Wall -Wpointer-arith -ftrapv -fsanitize=undefined-trap -fsanitize-undefined-trap-on-error
+            }
+            ndk {
+                abiFilters  'armeabi-v7a', 'arm64-v8a','x86','x86_64'//,'mips','mips64','armeabi',
+            }
+        }
+    }
+    buildTypes {
+        debug {
+            externalNativeBuild {
+                cmake {
+//                    arguments += "-DMY_BUILD_TYPE=DEBUG"
+//                    cFlags += "-O0"
+//                    targets "toolbox", "local_socket_server"
+                }
+            }
+        }
+        release {
+            externalNativeBuild {
+                cmake {
+//                    arguments += "-DMY_BUILD_TYPE=RELEASE"
+                    cFlags += "-Os"
+//                     targets "toolbox", "local_socket_server"
+                }
+            }
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
+        }
+    }
+    packagingOptions {
+        jniLibs {
+            keepDebugSymbols += ['**/*.so']
+        }
+        resources {
+            excludes += ['META-INF/services/javax.annotation.processing.Processor', 'META-INF/DEPENDENCIES.txt', 'META-INF/DEPENDENCIES', 'META-INF/MANIFEST.MF', 'META-INF/LICENSE.txt', 'META-INF/LICENSE', 'META-INF/NOTICE.txt', 'META-INF/ASL2.0', 'META-INF/NOTICE', 'META-INF/LGPL2.1']
+        }
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+        disable 'MissingTranslation', 'InvalidPackage', 'OldTargetApi'
+        ignoreWarnings true
+        quiet true
+    }
+
+}
+
+//打包处理jar（包括Kotlin）,但是没有混淆
+//task makeJar(dependsOn: ['compileReleaseJavaWithJavac'], type: Jar) {
+//    //最终的 Jar 包名，如果没设置，默认为 [baseName]-[appendix]-[version]-[classifier].[extension]
+//    archiveName = "toolbox.jar"
+//    delete 'build/libs/' + archiveName //生成的jar存放路径
+//    appendix = "demo"
+//    baseName = "androidJar"
+//    version = "1.0.0"
+//    classifier = "release"
+//    //后缀名
+//    extension = "jar"
+//
+//    //需打包的资源所在的路径集
+//    def srcClassesDir1 = [project.buildDir.absolutePath + "/tmp/kotlin-classes/release"] //Kotlin 生成的classes文件路径
+//    def srcClassesDir2 = [project.buildDir.absolutePath + "/intermediates/classes/release"] //Java 生成的classes文件路径
+//    //初始化资源路径集
+//    from srcClassesDir1, srcClassesDir2
+//    //去除路径集下部分的资源
+//    exclude "**/R.class"
+//    exclude "**/R\$*.class"
+//    //只导入资源路径集下的部分资源
+//    include "com/iflytek/musicrecognition/**/*.class"
+//}
+
+task testJar(type: Jar) {
+    classifier = 'tests'
+//    from android.sourceSets.test.output
+//    from project.buildDir.absolutePath + "/intermediates/javac/debug/compileDebugJavaWithJavac/classes"
+    from project.buildDir.absolutePath + "/intermediates/javac/debugAndroidTest/compileDebugAndroidTestJavaWithJavac/classes"
+    //    //去除路径集下部分的资源
+    exclude "**/R.class"
+    exclude "**/R\$*.class"
+}
+
+//task testJar(type: Jar) {
+//    baseName = "test-${project.archivesBaseName}"
+//    from android.sourceSets.test.output
+//}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    testImplementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    implementation 'com.android.support:appcompat-v7:28.0.0'
+    testImplementation 'junit:junit:4.12'
+    testImplementation 'org.json:json:20180813'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+}
