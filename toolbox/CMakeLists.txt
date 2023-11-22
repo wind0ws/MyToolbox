@@ -17,26 +17,21 @@ add_library( # Sets the name of the library.
         SHARED
 
         # Provides a relative path to your source file(s).
-        src/main/cpp/mlog.c
+        src/main/cpp/jni_toolbox.c
         src/main/cpp/jni_ring_buffer.c)
 
 # Specifies a path to native header files.
-include_directories(src/main/cpp/)
+include_directories(src/main/cpp/
+        src/main/cpp/lcu)
 
-#示例，include多个.h所在文件夹位置
-#include_directories( src/main/cpp/include/jsoncpp
-#        src/main/cpp/include/curl
-#        src/main/cpp/include/openssl
-#        )
-
-
-#导入.a静态库
+# import static lib.
+# lcu code from https://github.com/wind0ws/libcutils
 add_library(lcu STATIC IMPORTED)
 set_target_properties(lcu
         PROPERTIES IMPORTED_LOCATION
         ${CMAKE_SOURCE_DIR}/src/main/cpp/libs/${ANDROID_ABI}/liblcu_a.a)
 
-#导入.so动态库
+# for import .so
 #add_library(hi-common SHARED IMPORTED)
 #set_target_properties(hi-common
 #        PROPERTIES IMPORTED_LOCATION
@@ -49,7 +44,6 @@ add_library( # Sets the name of the library.
         STATIC
 
         # Provides a relative path to your source file(s).
-        src/main/cpp/mlog.c
         src/main/cpp/local_socket_server.c)
 
 # Searches for a specified prebuilt library and stores the path as a
@@ -78,6 +72,8 @@ find_library( # Sets the name of the path variable.
 
 target_link_libraries( # Specifies the target library.
         local_socket_server
+
+        lcu
 
         # Links the target library to the log library
         # included in the NDK.

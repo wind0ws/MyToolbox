@@ -8,7 +8,7 @@ import android.os.Build;
 import android.provider.Settings;
 import android.support.v4.app.NotificationManagerCompat;
 
-public class NotificationsUtils {
+public class SystemSettingUtils {
 
     /**
      * is notification enabled on system
@@ -17,11 +17,14 @@ public class NotificationsUtils {
         return NotificationManagerCompat.from(context.getApplicationContext()).areNotificationsEnabled();
     }
 
-    public static void openPush(Activity activity) {
+    /**
+     * goto enable notification setting on system
+     * @param activity from where
+     */
+    public static void toNotificationSettings(Activity activity) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             //这种方案适用于 API 26, 即8.0（含8.0）以上可以用
-            Intent intent = new Intent();
-            intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+            final Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
             intent.putExtra(Settings.EXTRA_APP_PACKAGE, activity.getPackageName());
             intent.putExtra(Settings.EXTRA_CHANNEL_ID, activity.getApplicationInfo().uid);
             activity.startActivity(intent);
@@ -50,9 +53,8 @@ public class NotificationsUtils {
      * goto this application info activity on system setting
      */
     public static void toApplicationInfo(Activity activity) {
-        Intent localIntent = new Intent();
+        final Intent localIntent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
         localIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        localIntent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
         localIntent.setData(Uri.fromParts("package", activity.getPackageName(), null));
         activity.startActivity(localIntent);
     }

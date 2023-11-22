@@ -21,7 +21,7 @@ public abstract class PermissionActivity extends AppCompatActivity {
         mPermissionManager = new PermissionManager() {
             @Override
             public void ifCancelledAndCannotRequest(Activity activity) {
-                super.ifCancelledAndCannotRequest(activity);
+                //super.ifCancelledAndCannotRequest(activity);
                 onSomePermissionPermanentlyDenied();
             }
         };
@@ -32,10 +32,12 @@ public abstract class PermissionActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         mPermissionManager.checkPermissionsResult(this, requestCode, permissions, grantResults);
-        final PermissionManager.StatusArray status = mPermissionManager.getStatus(this);
+        final PermissionManager.PermissionStatus status = mPermissionManager.checkPermission(this);
         if (status.denied.size() > 0) {
             return;
         }
@@ -49,6 +51,7 @@ public abstract class PermissionActivity extends AppCompatActivity {
         Toast.makeText(getApplicationContext(),
                 R.string.tip_no_permission_exit,
                 Toast.LENGTH_LONG).show();
+        SystemSettingUtils.toPermissionSetting(this);
         finish();
     }
 

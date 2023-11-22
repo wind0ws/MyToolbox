@@ -40,8 +40,8 @@ android {
             externalNativeBuild {
                 cmake {
 //                    arguments += "-DMY_BUILD_TYPE=DEBUG"
-                    cFlags += "-O0"
-                    targets "toolbox", "local_socket_server"
+                    cFlags += "-Og"
+//                    targets "native-lib", "native-resample"
                 }
             }
         }
@@ -49,8 +49,8 @@ android {
             externalNativeBuild {
                 cmake {
 //                    arguments += "-DMY_BUILD_TYPE=RELEASE"
-                    cFlags += "-Os"
-//                     targets "toolbox", "local_socket_server"
+//                    cFlags += "-Os"
+//                     targets "native-lib", "native-resample"
                 }
             }
             minifyEnabled true

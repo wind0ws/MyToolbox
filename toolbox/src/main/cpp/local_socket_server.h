@@ -26,7 +26,7 @@ typedef struct {
     socket_server_on_received_data_cb received_data_cb;
 } server_config_t;
 
-int local_socket_server_start(__IN server_config_t config, __OUT server_handle *handle_p);
+int local_socket_server_start(__OUT server_handle *handle_p, __IN server_config_t *config_p);
 
 int local_socket_server_stop(__IN server_handle *handle_p);
 

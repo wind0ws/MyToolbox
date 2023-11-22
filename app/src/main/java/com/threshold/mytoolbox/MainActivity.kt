@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.view.Gravity
 import com.threshold.permissions.PermissionController
+import com.threshold.permissions.SystemSettingUtils
 import com.threshold.toolbox.Density
 import kotlinx.android.synthetic.main.activity_main.*
 import com.threshold.toolbox.ToastUtil
@@ -85,11 +86,12 @@ class MainActivity : AppCompatActivity(), PermissionController.OnPermissionChang
     }
 
     override fun onAllPermissionGranted() {
-        ToastUtil.showLong(this, "All permission got!")
+        ToastUtil.showLong(this, "OK, All permission got!")
     }
 
     override fun onSomePermissionPermanentlyDenied() {
-        ToastUtil.showLong(this, "Some Permission Permanently Denied! app can't work properly")
+        ToastUtil.showLong(this, R.string.tip_no_permission_exit)
+        SystemSettingUtils.toPermissionSetting(this)
         finish()
     }
 

@@ -12,7 +12,8 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class RingBufferTest {
 
-    private static class Flag {
+    @SuppressWarnings("all")
+    private static class FlagHolder {
         private boolean running = true;
     }
 
@@ -23,7 +24,7 @@ public class RingBufferTest {
         LLog.i("ringBuffer.availableWriteLen()=%d", ringBuffer.availableWriteLen());
         Assert.assertEquals(ringBuffer.availableWriteLen(), 1024);
 
-        final Flag flag = new Flag();
+        final FlagHolder flagHolder = new FlagHolder();
 
         final byte[] expectedBuffer = new byte[]{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6,
                 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF};
@@ -33,7 +34,7 @@ public class RingBufferTest {
 
             @Override
             public void run() {
-                while (flag.running) {
+                while (flagHolder.running) {
                     if (ringBuffer.availableReadLen() < buffer.length) {
                         SystemClock.sleep(2);
                         continue;
@@ -47,7 +48,7 @@ public class RingBufferTest {
         Thread producer = new Thread(new Runnable() {
             @Override
             public void run() {
-                while (flag.running) {
+                while (flagHolder.running) {
                     if (ringBuffer.availableWriteLen() < 4) {
                         SystemClock.sleep(1);
                         continue;
@@ -61,7 +62,7 @@ public class RingBufferTest {
         LLog.d("consumer and producer started");
 
         SystemClock.sleep(20000);
-        flag.running = false;
+        flagHolder.running = false;
 
         LLog.i("--> join consumer/producer");
         consumer.join();

@@ -24,8 +24,8 @@ public abstract class PermissionManager {
 
     public static final String PERMISSION_POST_NOTIFICATIONS = "android.permission.POST_NOTIFICATIONS";
 
-    public static class StatusArray {
-        StatusArray(List<String> granted, List<String> denied) {
+    public static class PermissionStatus {
+        PermissionStatus(List<String> granted, List<String> denied) {
             this.denied = denied;
             this.granted = granted;
         }
@@ -36,12 +36,11 @@ public abstract class PermissionManager {
 
     private static final int REQUEST_CODE_PERMISSIONS = 65535;
 
-
     public boolean checkAndRequestPermissions(Activity activity) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M /*23*/) {
-            if (!NotificationsUtils.isNotificationEnabled(activity)) {
+            if (!SystemSettingUtils.isNotificationEnabled(activity)) {
                 ToastUtil.showLong(activity, R.string.tip_grant_notification);
-                NotificationsUtils.openPush(activity);
+                SystemSettingUtils.toNotificationSettings(activity);
             }
 
             final List<String> listPermissionsNeeded = permissionsWillRequest(activity);
@@ -62,7 +61,7 @@ public abstract class PermissionManager {
         return true;
     }
 
-    public StatusArray getStatus(Activity activity) {
+    public PermissionStatus checkPermission(Activity activity) {
         final ArrayList<String> grant = new ArrayList<>();
         final ArrayList<String> deny = new ArrayList<>();
         final List<String> listPermissionsNeeded = permissionsWillRequest(activity);
@@ -72,13 +71,13 @@ public abstract class PermissionManager {
                 grant.add(per);
             } else {
                 if (per.equalsIgnoreCase(PERMISSION_POST_NOTIFICATIONS)
-                        && NotificationsUtils.isNotificationEnabled(activity)) {
+                        && SystemSettingUtils.isNotificationEnabled(activity)) {
                     continue;
                 }
                 deny.add(per);
             }
         }
-        return new StatusArray(grant, deny);
+        return new PermissionStatus(grant, deny);
     }
 
     public List<String> permissionsWillRequest(Activity activity) {
@@ -90,16 +89,14 @@ public abstract class PermissionManager {
                     PackageManager.GET_PERMISSIONS);
             final String[] permissionInfo = pi.requestedPermissions;
             Collections.addAll(per, permissionInfo);
-            /*if (Build.VERSION.SDK_INT >= 33) {
-                // request notification permission
-                per.add(PERMISSION_POST_NOTIFICATIONS);
-            }*/
         } catch (Exception e) {
             //ignore
         }
         return per;
     }
 
+    // do it check on Activity.onRequestPermissionsResult
+    // public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
     public void checkPermissionsResult(Activity activity, int requestCode,
                                        String[] permissions, int[] grantResults) {
         if (requestCode != REQUEST_CODE_PERMISSIONS) {
@@ -115,7 +112,7 @@ public abstract class PermissionManager {
         }
         for (int i = 0; i < permissions.length; i++) {
             if (PERMISSION_POST_NOTIFICATIONS.equalsIgnoreCase(permissions[i]) &&
-                    NotificationsUtils.isNotificationEnabled(activity)) {
+                    SystemSettingUtils.isNotificationEnabled(activity)) {
                 perms.put(permissions[i], PackageManager.PERMISSION_GRANTED);
             } else {
                 perms.put(permissions[i], grantResults[i]);
@@ -168,6 +165,7 @@ public abstract class PermissionManager {
     public void ifCancelledAndCannotRequest(Activity activity) {
         Toast.makeText(activity.getApplicationContext(),
                 "Go to settings and enable permissions", Toast.LENGTH_LONG).show();
+        SystemSettingUtils.toPermissionSetting(activity);
     }
 
     private static void showDialogOK(Activity activity, String message,

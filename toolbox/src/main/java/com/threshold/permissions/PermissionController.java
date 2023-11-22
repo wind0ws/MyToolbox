@@ -87,7 +87,7 @@ public class PermissionController {
                                                 @NonNull String[] permissions,
                                                 @NonNull int[] grantResults) {
         mPermissionManager.checkPermissionsResult(activity, requestCode, permissions, grantResults);
-        final PermissionManager.StatusArray status = mPermissionManager.getStatus(activity);
+        final PermissionManager.PermissionStatus status = mPermissionManager.checkPermission(activity);
         if (status.denied.size() > 0) {
             for (int i = 0; i < status.denied.size(); ++i) {
                 Log.e("PermissionController", "you denied: " + status.denied.get(i));
@@ -101,8 +101,8 @@ public class PermissionController {
         return mIsAllPermissionGranted;
     }
 
-    public PermissionManager.StatusArray getLastStatus(Activity activity) {
-        return mPermissionManager.getStatus(activity);
+    public PermissionManager.PermissionStatus checkPermission(Activity activity) {
+        return mPermissionManager.checkPermission(activity);
     }
 
     protected void onAllPermissionGranted() {
@@ -121,6 +121,7 @@ public class PermissionController {
                 R.string.tip_no_permission_exit,
                 Toast.LENGTH_LONG)
                 .show();
+        SystemSettingUtils.toPermissionSetting(activity);
         activity.finish();
     }
 
