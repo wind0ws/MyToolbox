@@ -6,6 +6,8 @@ import java.io.UnsupportedEncodingException;
 
 public class Base64Util {
 
+    private static final String UTF8 = "UTF-8";
+
     private Base64Util() {
         throw new IllegalStateException("no instance");
     }
@@ -13,20 +15,18 @@ public class Base64Util {
     public static String encode(final byte[] data) {
         final byte[] encode = Base64.encode(data, Base64.NO_WRAP);
         try {
-            return new String(encode, "UTF-8");
+            return new String(encode, UTF8);
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-        return "";
     }
 
     public static String encodeString(final String data) {
         try {
-            return encode(data.getBytes("UTF-8"));
+            return encode(data.getBytes(UTF8));
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-        return "";
     }
 
     public static byte[] decode(final String encode) {
@@ -35,11 +35,10 @@ public class Base64Util {
 
     public static String decodeString(final String encode) {
         try {
-            return new String(decode(encode), "UTF-8");
+            return new String(decode(encode), UTF8);
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-        return "";
     }
 
 }

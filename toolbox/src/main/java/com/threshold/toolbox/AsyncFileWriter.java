@@ -12,6 +12,7 @@ public class AsyncFileWriter extends OutputStream {
 
     private final RingBuffer mRingBuf;
     private final FileWriterWorker mFileWriterWorker;
+    private byte[] mIntBuf = null;
 
     public AsyncFileWriter(final File file, final int bufferSize) {
         if (null == file || bufferSize < 4096) {
@@ -31,8 +32,11 @@ public class AsyncFileWriter extends OutputStream {
     @Override
     public void write(final int b) {
         checkCloseStatus();
-        throw new UnsupportedOperationException("unsupported write(int)," +
-                " consider convert int to bytes instead");
+        if (null == mIntBuf) {
+            mIntBuf = new byte[4];
+        }
+        ByteUtil.intToLittleEndianBytes(b, mIntBuf, 0);
+        write(mIntBuf, 0, 4);// int have 4 byte.
     }
 
     @Override
@@ -67,6 +71,7 @@ public class AsyncFileWriter extends OutputStream {
     @Override
     public void close() {
         checkCloseStatus();
+        mIntBuf = null;
         mFileWriterWorker.sendCloseMsg();
     }
 
