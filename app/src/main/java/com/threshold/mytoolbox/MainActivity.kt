@@ -7,7 +7,7 @@ import android.os.Handler
 import android.view.Gravity
 import com.threshold.permissions.PermissionController
 import com.threshold.permissions.SystemSettingUtils
-import com.threshold.toolbox.Density
+import com.threshold.toolbox.DensityUtil
 import kotlinx.android.synthetic.main.activity_main.*
 import com.threshold.toolbox.ToastUtil
 import com.threshold.toolbox.log.llog.LLog
@@ -28,7 +28,7 @@ class MainActivity : AppCompatActivity(), PermissionController.OnPermissionChang
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Density.setupDensity(application, this)
+        DensityUtil.setupDensity(application, this)
         setContentView(R.layout.activity_main)
 
         // now request permission from user

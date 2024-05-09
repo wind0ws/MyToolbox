@@ -37,8 +37,8 @@
 -classobfuscationdictionary dictionary_rules.txt
 -dontwarn android.support.annotation.Keep
 -keep @android.support.annotation.Keep class **{
-@android.support.annotation.Keep <fields>;
-@android.support.annotation.Keep <methods>;
+    @android.support.annotation.Keep <fields>;
+    @android.support.annotation.Keep <methods>;
 }
 
 # For enumeration classes, see http://proguard.sourceforge.net/manual/examples.html#enumerations
@@ -52,7 +52,7 @@
 -keep class * implements android.os.Parcelable
 #Parcelable实现类中的CREATOR字段是绝对不能改变的，包括大小写
 -keepclassmembers class * implements android.os.Parcelable {
-  public static final android.os.Parcelable$Creator CREATOR;
+    public static final android.os.Parcelable$Creator CREATOR;
 }
 
 #R文件中的所有记录资源id的静态字段
@@ -67,7 +67,7 @@
 -dontwarn android.support.**
 
 
-#--->native function
+#--->jni native function
 -keepclassmembers class * {
     native <methods>;
 }
@@ -83,18 +83,18 @@
 
 # keep自定义view的get/set方法
 -keepclassmembers public class * extends android.view.View {
-   void set*(***);
-   *** get*();
+    void set*(***);
+    *** get*();
 }
 
 # keep继续自Activity中所有包含public void *(android.view.View)签名的方法，如onClick
 -keepclassmembers class * extends android.app.Activity {
-   public void *(android.view.View);
+    public void *(android.view.View);
 }
 
 #保护所有类中的TAG字段
 -keepclassmembers class * {
-   static final java.lang.String TAG;
+    static final java.lang.String TAG;
 }
 
 -keepnames class * implements java.io.Serializable
@@ -112,6 +112,29 @@
 ##--> protect library class
 -keep public class **Util*{
     public <methods>;
+}
+
+# protect Writer/Dispatcher
+-keep public class com.threshold.toolbox.**er*{
+    public <methods>;
+}
+
+-keep public class com.threshold.toolbox.*$*er{
+    public <methods>;
+}
+
+-keepclasseswithmembernames public class com.threshold.permissions.*{
+    public *;
+}
+
+-keepclasseswithmembernames public class com.threshold.toolbox.log.**{
+    public *;
+}
+
+# protect inner class fields and methods in jni class.
+-keepclasseswithmembernames class com.threshold.jni.**Jni$* {
+     <fields>;
+     public <methods>;
 }
 
 -keep class com.threshold.toolbox.MessageDispatcher{

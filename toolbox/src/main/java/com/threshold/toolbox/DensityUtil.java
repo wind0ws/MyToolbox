@@ -60,7 +60,7 @@ import android.util.DisplayMetrics;
  * </code>
  *
  */
-public class Density {
+public class DensityUtil {
 
     //  use iphone5(4inch)(1136x640)(xhdpi/320dpi(ppi))(density=2) as standard dimens
     //  measure element pixel in picture and let it divide 2 to as it dp.
