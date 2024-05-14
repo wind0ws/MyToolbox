@@ -9,6 +9,7 @@ import android.support.annotation.NonNull;
  * time: 2019/6/6 16:00
  * change:
  */
+@SuppressWarnings("unused")
 public class SLog {
 
     private SLog() {
@@ -41,11 +42,8 @@ public class SLog {
         if (sILog != null) {
             throw new IllegalStateException("SLog is already initialized.");
         }
-        final ILog iLog = LoggerFactory.create(LoggerFactory.LOG_STRATEGY_WITH_TRACE, null,
-                1, printer);
-        if (null == iLog) {
-            throw new RuntimeException("failed create log instance");
-        }
+        final ILog iLog = LoggerFactory.create(LoggerFactory.LOG_STRATEGY_WITH_TRACE,
+                null, 1, printer);
         init(iLog);
     }
 

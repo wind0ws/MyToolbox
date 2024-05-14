@@ -8,6 +8,7 @@ public interface ILog {
     /**
      * if no tag passed in log function, use this default tag instead.
      * if this default tag is null or empty, it will generate a tag for you.
+     *
      * @param defaultTag default tag
      * @return this instance
      */

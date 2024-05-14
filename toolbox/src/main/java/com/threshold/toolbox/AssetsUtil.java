@@ -51,7 +51,7 @@ public class AssetsUtil {
                     in.close();
                 }
             } catch (IOException e) {
-                Log.e(TAG,"failed on close in/out stream", e);
+                Log.e(TAG, "failed on close in/out stream", e);
             }
         }
         return false;
@@ -146,7 +146,7 @@ public class AssetsUtil {
             return result.toString();
         } catch (Exception e) {
             Log.e(TAG, "err on read from \"" + fileNamePath + "\"", e);
-        }finally {
+        } finally {
             if (bufReader != null) {
                 try {
                     bufReader.close();

@@ -2,7 +2,9 @@ package com.threshold.toolbox.log;
 
 import android.support.annotation.IntDef;
 import android.util.Log;
+
 import java.lang.annotation.*;
+
 import static com.threshold.toolbox.log.LogPriority.*;
 
 @Documented

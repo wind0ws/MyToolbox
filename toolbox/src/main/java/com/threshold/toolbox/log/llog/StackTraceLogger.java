@@ -334,8 +334,8 @@ class StackTraceLogger implements StackTraceLog,Printer {
         final String methodName = element.getMethodName();
         String tag = null;
 
-        if (lineNumber == -1) {
-            //no source. maybe minifyEnabled, now we try to search TAG filed in class
+        if (lineNumber < 0) {
+            // no source. maybe minifyEnabled, now we try to search TAG filed in class
             final String tagFoundFromCache = mTagFinderCache.findTag(className);
             //if tag cache is "" represent that we searched TAG before, but no TAG found in class.
             if (!"".equals(tagFoundFromCache)) {

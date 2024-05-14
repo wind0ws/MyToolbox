@@ -2,6 +2,7 @@ package com.threshold.toolbox;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @SuppressWarnings("unused")
@@ -19,11 +20,11 @@ public class FileUtil {
 
     public static class DefaultFileOrDirectoryDeterminer implements FileOrDirectoryDeterminer {
 
-        private static final Pattern sPattern = Pattern.compile("^[a-zA-Z0-9]+\\.[a-zA-Z0-9]+$");
+        private static final Pattern sFileNamePattern = Pattern.compile("^[^\\s]+\\.[^\\s]+$");
 
         @Override
         public boolean isFile(final String name) {
-            return sPattern.matcher(name).matches();
+            return sFileNamePattern.matcher(name).matches();
         }
     }
 

@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.os.Process;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+
 import com.threshold.toolbox.AsyncFileWriter;
 
 import java.io.File;
@@ -14,7 +15,9 @@ import java.util.Locale;
 
 import static com.threshold.toolbox.log.LogPriority.LOG_PRIORITY_OFF;
 
+@SuppressWarnings("unused")
 public class SimpleDiskPrinter implements Printer {
+    @SuppressWarnings("all")
     private static final Charset sDefaultCharset = Charset.forName("UTF-8");
     @SuppressLint("ConstantLocale")
     private static final SimpleDateFormat sDateFormat = new SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.getDefault());

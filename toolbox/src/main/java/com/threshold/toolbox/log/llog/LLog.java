@@ -2,16 +2,17 @@ package com.threshold.toolbox.log.llog;
 
 import com.threshold.toolbox.log.TraceUtil;
 
+@SuppressWarnings("unused")
 public class LLog {
 
     public static class Config{
         /**
-         * 是否允许输出log
+         * allow print log
          */
         public static boolean allowPrint = true;
 
         /**
-         * 是否强制以LogLevel.error模式输出
+         * force all level to LogLevel.ERROR
          */
         public static boolean forceLevelE = false;
     }
@@ -80,14 +81,14 @@ public class LLog {
     }
 
     /**
-     * 打印json
+     * print json
      */
     public static void json(String json) {
         STACK_TRACE_LOG.json(TraceUtil.getStackTrace(), json);
     }
 
     /**
-     * 打印对象(支持Collection,Map)
+     * print object(support Collection,Map)
      */
     public static void obj(Object obj) {
         STACK_TRACE_LOG.obj(TraceUtil.getStackTrace(), obj);

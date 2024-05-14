@@ -34,24 +34,26 @@ public class LoggerFactory {
      * @param printer the log printer
      * @return {@link ILog} impl.
      */
-    @Nullable
+    @NonNull
     public static ILog create(@LogStrategy int logStrategy, @Nullable final String defaultLogTag,
                               final int methodOffset, @NonNull final Printer printer) {
-        ILog iLog = null;
+        ILog iLog;
         if (logStrategy == LOG_STRATEGY_WITH_TRACE) {
             iLog = new TracerLogger(defaultLogTag, methodOffset, printer);
         } else if (logStrategy == LOG_STRATEGY_DEFAULT) {
             iLog = new LogcatLogger(defaultLogTag, methodOffset, printer);
+        } else {
+            throw new IllegalArgumentException("not adapt this logStrategy=" + logStrategy);
         }
         return iLog;
     }
 
-    @Nullable
+    @NonNull
     public static ILog create(@LogStrategy int logMode, @Nullable final String defaultLogTag) {
         return create(logMode, defaultLogTag, 0, new LogcatPrinter());
     }
 
-    @Nullable
+    @NonNull
     public static ILog create(@LogStrategy int logMode) {
         return create(logMode, null);
     }

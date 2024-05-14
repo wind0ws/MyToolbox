@@ -47,6 +47,12 @@ public class TagFinder {
         return "";
     }
 
+    /**
+     * find TAG from class annotation.
+     * if fail, fallback find it from class field.
+     * @param className the class name
+     * @return tag
+     */
     public static String searchTagInClass(final String className) {
         try {
             final Class<?> targetClz = Class.forName(className);

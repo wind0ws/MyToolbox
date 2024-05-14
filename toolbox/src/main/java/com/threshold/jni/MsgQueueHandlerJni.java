@@ -14,6 +14,9 @@ public class MsgQueueHandlerJni {
         System.loadLibrary("toolbox");
     }
 
+    /**
+     * for encapsulate msg callback data
+     */
     public static class MsgQueueData {
         public int what;
         public int arg1;
