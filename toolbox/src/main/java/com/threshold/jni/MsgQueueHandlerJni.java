@@ -1,9 +1,12 @@
 package com.threshold.jni;
 
 import android.support.annotation.Keep;
+import android.util.Log;
 
+import com.threshold.toolbox.log.LogTag;
 import com.threshold.toolbox.log.llog.LLog;
 
+@LogTag("MsgQJni")
 public class MsgQueueHandlerJni {
 
     // version that communicate with java jni class.
@@ -24,28 +27,48 @@ public class MsgQueueHandlerJni {
         public byte[] obj;
     }
 
+    /**
+     * receive msg of queue.
+     */
+    @Keep
+    public interface OnReceiveMsgListener {
+
+        /**
+         * The msg object is reusable. so DO NOT run around the world with it.
+         * If necessary, please copy it by yourself.
+         */
+        int handleMsg(int what, int arg1, int arg2, byte[] obj, int objLen);
+
+    }
+
     @Keep
     @SuppressWarnings("all")
     public static class MsgQueueHandlerParam {
         private int protocolVer = JNI_PROTOCOL_VER;
         private int bufSize = 8192;
-        private String callbackFunction = "handleEvent";
+        private final String callbackFunction = "handleEvent";
+        private final OnReceiveMsgListener listener;
 
-        public MsgQueueHandlerParam() {
-        }
-
-        public MsgQueueHandlerParam(final int bufSize,
-                                    final String callbackFunction) {
+        /** create msg queue handler
+         * @param bufSize msg queue total mem size
+         * @param listener handle msg queue.
+         */
+        public MsgQueueHandlerParam(final int bufSize, OnReceiveMsgListener listener) {
+            if (bufSize < 4096) {
+                LLog.w("maybe bufSize(%d) is too small, " +
+                        "if you feed large msg, maybe you will stuck at feedMsg method " +
+                        "on first time, that is horrible", bufSize);
+            }
             this.bufSize = bufSize;
-            this.callbackFunction = callbackFunction;
+            this.listener = listener;
         }
 
-        // handle jni callback. do dot delete or obfuscure it!
+        // handle jni callback. do NOT delete or obfuscure it!
         @Keep
-        public int handleEvent(int what, int arg1, int arg2, byte[] obj) {
-            LLog.i("received event. what=%d, arg1=%d, arg2=%d, obj_len=%d",
-                    what, arg1, arg2, null == obj ? 0 : obj.length);
-            return 0;
+        public int handleEvent(int what, int arg1, int arg2, byte[] obj, int objLen) {
+//            LLog.i("received event. what=%d, arg1=%d, arg2=%d, obj_len=%d",
+//                    what, arg1, arg2, objLen);
+            return listener.handleMsg(what, arg1, arg2, obj, objLen);
         }
     }
 
@@ -69,7 +92,8 @@ public class MsgQueueHandlerJni {
      * @param obj    obj
      * @return 0 for succeed, otherwise fail
      */
-    public static native int feedMsg(long handle, int what, int arg1, int arg2, byte[] obj);
+    public static native int feedMsg(long handle, int what,
+                                     int arg1, int arg2, byte[] obj, int objLen);
 
     /**
      * destroy msg queue

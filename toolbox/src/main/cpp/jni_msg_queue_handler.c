@@ -17,12 +17,45 @@ typedef struct {
         jclass m_cls;
         jmethodID m_method_id;
         jobject m_obj;
-        bool m_obj_global_referenced;
     } cb_data;
 
-    size_t cache_msg_max_obj_len;
-    queue_msg_t cache_msg;
+    // cache for callback jbyteArray to java
+    struct {
+        jsize obj_capacity;
+        jbyteArray j_obj;
+    } cache;
+
+    // transform for feedMsg
+    struct {
+        size_t in_obj_capacity;
+        queue_msg_t *in;
+    } msg;
 } msg_queue_jni_context_t;
+
+#define CLEANUP_MSG(context, type) do { if ((context)->msg. type ) \
+{ \
+  free((context)->msg. type ); \
+  (context)->msg. type = NULL; \
+  (context)->msg. type##_obj_capacity = 0; \
+} } while(0)
+
+#define RECREATE_MSG(context, type, new_size) do {       \
+if ((new_size) <= (context)->msg. type##_obj_capacity) { \
+break; }                                                 \
+CLEANUP_MSG((context), type);                            \
+(context)->msg. type##_obj_capacity = (new_size);        \
+(context)->msg. type = (queue_msg_t *) malloc(sizeof(queue_msg_t) + (context)->msg. type##_obj_capacity);\
+if (NULL == (context)->msg. type ) {                    \
+LOGE_TRACE("failed on alloc msg.in. expect_mem_size=%zu",\
+           sizeof(queue_msg_t) + (context)->msg. type##_obj_capacity);    \
+break;}\
+memset((context)->msg. type , 0, sizeof(queue_msg_t) + (context)->msg. type##_obj_capacity);\
+} while(0)
+
+static void pri_cleanup_jobj_cache(JNIEnv *env, msg_queue_jni_context_t *context);
+
+static void pri_recreate_jobj_cache(JNIEnv *env,
+                                    msg_queue_jni_context_t *context, jsize new_obj_capacity);
 
 static int handle_queue_msg(queue_msg_t *msg_p, void *user_data);
 
@@ -36,16 +69,15 @@ Java_com_threshold_jni_MsgQueueHandlerJni_init(JNIEnv *env, jclass clazz,
     jlong *handle_holder = (*env)->GetLongArrayElements(env, _handle_holder, NULL);
     handle_holder[0] = 0;
 
-    const size_t cache_msg_max_obj_len = 40960U;
-    const size_t mem_size_jni_context = sizeof(msg_queue_jni_context_t) + cache_msg_max_obj_len;
-    msg_queue_jni_context_t *context = (msg_queue_jni_context_t *) malloc(mem_size_jni_context);
+    msg_queue_jni_context_t *context = (msg_queue_jni_context_t *) malloc(
+            sizeof(msg_queue_jni_context_t));
     do {
         if (!context) {
-            LOGE("failed alloc jni context! mem_size=%zu", mem_size_jni_context);
+            LOGE("failed alloc jni context! mem_size=%zu", sizeof(msg_queue_jni_context_t));
             break;
         }
-        memset(context, 0, mem_size_jni_context);
-        context->cache_msg_max_obj_len = cache_msg_max_obj_len;
+        memset(context, 0, sizeof(msg_queue_jni_context_t));
+        RECREATE_MSG(context, in, 1024U);
 
         (*env)->GetJavaVM(env, &(context->cb_data.jvm));
         context->cb_data.m_cls = (*env)->GetObjectClass(env, _init_param);
@@ -76,12 +108,11 @@ Java_com_threshold_jni_MsgQueueHandlerJni_init(JNIEnv *env, jclass clazz,
         jstring j_cb_name = (jstring) ((*env)->GetObjectField(env, _init_param, field_id_cb_name));
 
         context->cb_data.m_obj = (*env)->NewGlobalRef(env, _init_param);
-        context->cb_data.m_obj_global_referenced = true;
 
         const char *str_cb_name = (*env)->GetStringUTFChars(env, j_cb_name, NULL);
         LOGI("callback function name => \"%s\"", str_cb_name);
         context->cb_data.m_method_id = (*env)->GetMethodID(env, context->cb_data.m_cls,
-                                                           str_cb_name, "(III[B)I");
+                                                           str_cb_name, "(III[BI)I");
         (*env)->ReleaseStringUTFChars(env, j_cb_name, str_cb_name);
         if (NULL == context->cb_data.m_method_id) {
             LOGE("failed on lookup callback function: \"%s\"", str_cb_name);
@@ -98,14 +129,11 @@ Java_com_threshold_jni_MsgQueueHandlerJni_init(JNIEnv *env, jclass clazz,
         ret = 0;
     } while (0);
 
-    if (0 != ret) {
-        if (NULL != context) {
-            if (context->cb_data.m_obj_global_referenced) {
-                (*env)->DeleteGlobalRef(env, context->cb_data.m_obj);
-                context->cb_data.m_obj_global_referenced = false;
-            }
-            free(context);
+    if (0 != ret && NULL != context) {
+        if (context->cb_data.m_obj) {
+            (*env)->DeleteGlobalRef(env, context->cb_data.m_obj);
         }
+        free(context);
     }
 
     (*env)->ReleaseLongArrayElements(env, _handle_holder, handle_holder, 0);
@@ -116,7 +144,7 @@ Java_com_threshold_jni_MsgQueueHandlerJni_init(JNIEnv *env, jclass clazz,
 JNIEXPORT jint JNICALL
 Java_com_threshold_jni_MsgQueueHandlerJni_feedMsg(JNIEnv *env, jclass clazz,
                                                   jlong _handle, jint _what, jint _arg1, jint _arg2,
-                                                  jbyteArray _obj) {
+                                                  jbyteArray _obj, jint _obj_len) {
     (void) clazz;
     MSG_Q_CODE msg_push_status = MSG_Q_CODE_GENERIC_FAIL;
     msg_queue_jni_context_t *context = LONG64_TO_PTR(_handle);
@@ -124,54 +152,55 @@ Java_com_threshold_jni_MsgQueueHandlerJni_feedMsg(JNIEnv *env, jclass clazz,
         return -1;
     }
 
-    context->cache_msg.what = _what;
-    context->cache_msg.arg1 = _arg1;
-    context->cache_msg.arg2 = _arg2;
-    context->cache_msg.obj_len = 0;
-
     jbyteArray j_obj_array = _obj;
     bool valid_msg = false;
+    int obj_len = _obj_len;
     do {
-        if (NULL == j_obj_array) {
+        if (NULL == j_obj_array || 0 == obj_len) {
             valid_msg = true;
             break;
         }
-        jsize obj_len = (*env)->GetArrayLength(env, j_obj_array);
-        if (0 == obj_len) {
-            valid_msg = true;
+#if 0
+        jsize obj_capacity = (*env)->GetArrayLength(env, j_obj_array);
+        if ((int)obj_capacity < obj_len) {
+            abort();
             break;
         }
+#endif
         if (obj_len < 1) {
             LOGE("invalid obj_len=%d", obj_len);
             break;
         }
-
-        jbyte *obj_bytes = (*env)->GetByteArrayElements(env, j_obj_array, NULL);
-        if (obj_len <= (int) context->cache_msg_max_obj_len) {
-            context->cache_msg.obj_len = (int) obj_len;
-            memcpy(&(context->cache_msg.obj[0]), obj_bytes, (size_t) obj_len);
-            valid_msg = true;
-        } else {
-            LOGE("fatal error: lost message! obj too large! obj_len=%d", obj_len);
+        if (obj_len > (int)(context->msg.in_obj_capacity)) {
+            RECREATE_MSG(context, in, ((size_t) obj_len * 2U));
         }
+        valid_msg = true;
+        jbyte *obj_bytes = (*env)->GetByteArrayElements(env, j_obj_array, NULL);
+        memcpy(&(context->msg.in->obj[0]), obj_bytes, (size_t) obj_len);
         (*env)->ReleaseByteArrayElements(env, j_obj_array, obj_bytes, 0);
     } while (0);
+    context->msg.in->what = _what;
+    context->msg.in->arg1 = _arg1;
+    context->msg.in->arg2 = _arg2;
+    context->msg.in->obj_len = obj_len;
 
-    if (valid_msg) {
 //        LOGV("--> try push");
-        do {
-            if (MSG_Q_CODE_SUCCESS ==
-                (msg_push_status = msg_queue_handler_push(context->obj,
-                                                          &context->cache_msg))) {
-                break;
-            }
-            if (MSG_Q_CODE_FULL != msg_push_status) {
-                LOGE("failed(%d) on push msg", msg_push_status);
-                break;
-            }
-        } while (1);
+    do {
+        if (!valid_msg) {
+            break;
+        }
+        if (MSG_Q_CODE_SUCCESS ==
+            (msg_push_status = msg_queue_handler_push(context->obj,
+                                                      context->msg.in))) {
+            break;
+        }
+        if (MSG_Q_CODE_FULL != msg_push_status) {
+            LOGE("failed(%d) on push msg", msg_push_status);
+            break;
+        }
+    } while (1);
 //        LOGV("<-- push out with status: %d", msg_push_status);
-    }
+
     return (jint) msg_push_status;
 }
 
@@ -182,26 +211,30 @@ Java_com_threshold_jni_MsgQueueHandlerJni_destroy(JNIEnv *env, jclass clazz,
     (void) clazz;
     jint ret = -1;
 
+    LOGD(" --> destroy in...");
     jlong *handle_holder = (*env)->GetLongArrayElements(env, _handle_holder, NULL);
     msg_queue_jni_context_t *context = LONG64_TO_PTR(handle_holder[0]);
     do {
         if (NULL == context) {
             break;
         }
-        if (context->cb_data.m_obj_global_referenced) {
-            (*env)->DeleteGlobalRef(env, context->cb_data.m_obj);
-            context->cb_data.m_obj_global_referenced = false;
-        }
         msg_queue_handler_destroy(&context->obj);
+        CLEANUP_MSG(context, in);
+        pri_cleanup_jobj_cache(env, context);
+        if (context->cb_data.m_obj) {
+            (*env)->DeleteGlobalRef(env, context->cb_data.m_obj);
+            context->cb_data.m_obj = NULL;
+        }
         ret = 0;
     } while (0);
 
     handle_holder[0] = 0;
     (*env)->ReleaseLongArrayElements(env, _handle_holder, handle_holder, 0);
-    LOGI("destroyed done!");
+    LOGI(" <-- destroyed done! %d", (int) ret);
     return ret;
 }
 
+//==================================================================================================
 
 static int handle_queue_msg(queue_msg_t *msg_p, void *user_data) {
     msg_queue_jni_context_t *context = (msg_queue_jni_context_t *) user_data;
@@ -211,32 +244,61 @@ static int handle_queue_msg(queue_msg_t *msg_p, void *user_data) {
 
     // get env from current thread
     status = (*(context->cb_data.jvm))->GetEnv(context->cb_data.jvm,
-                                               (void **) &env, JNI_VERSION_1_4);
+                                               (void **) &env, JNI_VERSION_1_6);
     if (status < 0) {
         status = (*(context->cb_data.jvm))->AttachCurrentThread(context->cb_data.jvm, &env, NULL);
         if (status < 0) {
-            LOGE("oops: vm AttachCurrentThread error. lost msg!!!");
-            return 0;
+            LOGE_TRACE("oops: vm->AttachCurrentThread error(%d). lost msg!!!", status);
+            return 1;
         }
         jvm_attached = JNI_TRUE;
     }
 
     jbyteArray msg_obj_array = NULL;
-    if (msg_p->obj_len > 0) {
-        msg_obj_array = (*env)->NewByteArray(env, (jsize) msg_p->obj_len);
+    do {
+        if (msg_p->obj_len < 1) {
+            break;
+        }
+        //msg_obj_array = (*env)->NewByteArray(env, (jsize) msg_p->obj_len);
+        if (msg_p->obj_len > context->cache.obj_capacity) {
+            pri_recreate_jobj_cache(env, context, ((jsize) msg_p->obj_len * 2));
+        }
+        msg_obj_array = context->cache.j_obj;
         (*env)->SetByteArrayRegion(env, msg_obj_array, 0, (jsize) msg_p->obj_len,
                                    (jbyte *) msg_p->obj);
-    }
+    } while (0);
 
     jint user_ret = (*env)->CallIntMethod(env, context->cb_data.m_obj, context->cb_data.m_method_id,
-                                          msg_p->what, msg_p->arg1, msg_p->arg2, msg_obj_array);
+                                          msg_p->what, msg_p->arg1, msg_p->arg2,
+                                          msg_obj_array, msg_p->obj_len);
     if (0 != user_ret) {
-        LOGE("user handle msg err. %d", user_ret);
+        LOGE_TRACE("user handle msg err:%d", user_ret);
     }
     if (jvm_attached) {
         (*(context->cb_data.jvm))->DetachCurrentThread(context->cb_data.jvm);
     }
     return (int) user_ret;
+}
+
+static void pri_cleanup_jobj_cache(JNIEnv *env, msg_queue_jni_context_t *context) {
+    if (!context->cache.j_obj) {
+        return;
+    }
+    (*env)->DeleteGlobalRef(env, context->cache.j_obj);
+    context->cache.j_obj = NULL;
+    context->cache.obj_capacity = 0;
+}
+
+static void pri_recreate_jobj_cache(JNIEnv *env,
+                                    msg_queue_jni_context_t *context, jsize new_obj_capacity) {
+    pri_cleanup_jobj_cache(env, context);
+    if (new_obj_capacity < 1) {
+        return;
+    }
+    LOGI("recreate new jobj.cache, capacity=%d", new_obj_capacity);
+    context->cache.obj_capacity = new_obj_capacity;
+    jbyteArray msg_obj_array = (*env)->NewByteArray(env, new_obj_capacity);
+    context->cache.j_obj = (*env)->NewGlobalRef(env, msg_obj_array);
 }
 
 

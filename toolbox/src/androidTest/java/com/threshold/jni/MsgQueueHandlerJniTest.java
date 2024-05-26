@@ -18,7 +18,16 @@ public class MsgQueueHandlerJniTest {
     public void test() {
         int ret;
         final MsgQueueHandlerJni.MsgQueueHandlerParam queueHandlerParam =
-                new MsgQueueHandlerJni.MsgQueueHandlerParam();
+                new MsgQueueHandlerJni.MsgQueueHandlerParam(8192,
+                        new MsgQueueHandlerJni.OnReceiveMsgListener() {
+                    @Override
+                    public int handleMsg(final int what, final int arg1, final int arg2,
+                                         final byte[] obj, final int objLen) {
+                        LLog.i("received event: what=%d, arg1=%d, arg2=%d, obj_len=%d, my_id=%d",
+                                what, arg1, arg2, objLen, (int)(obj[arg2]));
+                        return 0;
+                    }
+                });
         ret = MsgQueueHandlerJni.init(mHandleHolder, queueHandlerParam);
         LLog.d("init ret=%d, handle=%d", ret, mHandleHolder[0]);
         Assert.assertEquals(ret, 0);
@@ -33,7 +42,7 @@ public class MsgQueueHandlerJniTest {
 
             data.arg2 = i;
             ret = MsgQueueHandlerJni.feedMsg(mHandleHolder[0],
-                    data.what, data.arg1, data.arg2, data.obj);
+                    data.what, data.arg1, data.arg2, data.obj, data.obj.length);
             LLog.d("feed msg ret=%d", ret);
             Assert.assertEquals(ret, 0);
 //            SystemClock.sleep(100);
