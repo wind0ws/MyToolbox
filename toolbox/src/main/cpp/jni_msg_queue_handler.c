@@ -33,24 +33,28 @@ typedef struct {
 } msg_queue_jni_context_t;
 
 #define CLEANUP_MSG(context, type) do { if ((context)->msg. type ) \
-{ \
-  free((context)->msg. type ); \
-  (context)->msg. type = NULL; \
+{                                          \
+  free((context)->msg. type );             \
+  (context)->msg. type = NULL;             \
   (context)->msg. type##_obj_capacity = 0; \
 } } while(0)
 
-#define RECREATE_MSG(context, type, new_size) do {       \
-if ((new_size) <= (context)->msg. type##_obj_capacity) { \
-break; }                                                 \
-CLEANUP_MSG((context), type);                            \
-(context)->msg. type##_obj_capacity = (new_size);        \
-(context)->msg. type = (queue_msg_t *) malloc(sizeof(queue_msg_t) + (context)->msg. type##_obj_capacity);\
-if (NULL == (context)->msg. type ) {                    \
-LOGE_TRACE("failed on alloc msg.in. expect_mem_size=%zu",\
-           sizeof(queue_msg_t) + (context)->msg. type##_obj_capacity);    \
-break;}\
-memset((context)->msg. type , 0, sizeof(queue_msg_t) + (context)->msg. type##_obj_capacity);\
+#define RECREATE_MSG(context, type, new_size) do {         \
+  if ((new_size) <= (context)->msg. type##_obj_capacity) { \
+    break;                                                 \
+  }                                                        \
+  CLEANUP_MSG((context), type);                            \
+  (context)->msg. type##_obj_capacity = (new_size);        \
+  (context)->msg. type = (queue_msg_t *) malloc(sizeof(queue_msg_t) + (context)->msg. type##_obj_capacity);\
+  if (NULL == (context)->msg. type ) {                     \
+    LOGE_TRACE("failed on alloc msg.in. expect_mem_size=%zu",\
+               sizeof(queue_msg_t) + (context)->msg. type##_obj_capacity);\
+    break;                                                 \
+  }                                                        \
+  memset((context)->msg. type , 0, sizeof(queue_msg_t) + (context)->msg. type##_obj_capacity);\
 } while(0)
+
+static int pri_destroy_jni_context(JNIEnv *env, msg_queue_jni_context_t *context);
 
 static void pri_cleanup_jobj_cache(JNIEnv *env, msg_queue_jni_context_t *context);
 
@@ -78,6 +82,7 @@ Java_com_threshold_jni_MsgQueueHandlerJni_init(JNIEnv *env, jclass clazz,
         }
         memset(context, 0, sizeof(msg_queue_jni_context_t));
         RECREATE_MSG(context, in, 1024U);
+        pri_recreate_jobj_cache(env, context, 512);
 
         (*env)->GetJavaVM(env, &(context->cb_data.jvm));
         context->cb_data.m_cls = (*env)->GetObjectClass(env, _init_param);
@@ -89,7 +94,8 @@ Java_com_threshold_jni_MsgQueueHandlerJni_init(JNIEnv *env, jclass clazz,
         }
         int protocol_ver = (int) ((*env)->GetIntField(env, _init_param, field_id_protocol_ver));
         if (JNI_PROTOCOL_VER != protocol_ver) {
-            LOGE("protocol_ver not matched, jni class not match with libraries! expected=%d, yours=%d",
+            LOGE("protocol_ver not matched: jni java class not matched with library! "
+                 "expected=%d, yours=%d",
                  JNI_PROTOCOL_VER, protocol_ver);
             break;
         }
@@ -105,6 +111,13 @@ Java_com_threshold_jni_MsgQueueHandlerJni_init(JNIEnv *env, jclass clazz,
         }
 
         jint j_buf_size = (*env)->GetIntField(env, _init_param, field_id_buf_size);
+        if (j_buf_size < 64) {
+            LOGE_TRACE("queue buffer size(%d) is too small.", j_buf_size);
+            break;
+        }
+        if (j_buf_size <= 2048) {
+            LOGW_TRACE("queue buffer size(%d) is so small, you should be careful.", j_buf_size);
+        }
         jstring j_cb_name = (jstring) ((*env)->GetObjectField(env, _init_param, field_id_cb_name));
 
         context->cb_data.m_obj = (*env)->NewGlobalRef(env, _init_param);
@@ -130,10 +143,7 @@ Java_com_threshold_jni_MsgQueueHandlerJni_init(JNIEnv *env, jclass clazz,
     } while (0);
 
     if (0 != ret && NULL != context) {
-        if (context->cb_data.m_obj) {
-            (*env)->DeleteGlobalRef(env, context->cb_data.m_obj);
-        }
-        free(context);
+        pri_destroy_jni_context(env, context);
     }
 
     (*env)->ReleaseLongArrayElements(env, _handle_holder, handle_holder, 0);
@@ -171,7 +181,7 @@ Java_com_threshold_jni_MsgQueueHandlerJni_feedMsg(JNIEnv *env, jclass clazz,
             LOGE("invalid obj_len=%d", obj_len);
             break;
         }
-        if (obj_len > (int)(context->msg.in_obj_capacity)) {
+        if (obj_len > (int) (context->msg.in_obj_capacity)) {
             RECREATE_MSG(context, in, ((size_t) obj_len * 2U));
         }
         valid_msg = true;
@@ -185,21 +195,27 @@ Java_com_threshold_jni_MsgQueueHandlerJni_feedMsg(JNIEnv *env, jclass clazz,
     context->msg.in->obj_len = obj_len;
 
 //        LOGV("--> try push");
+#define MAX_PUSH_RETRY_COUNT 4U
+    static uint32_t retry_count = 0;
+    retry_count = 0;
     do {
         if (!valid_msg) {
             break;
         }
-        if (MSG_Q_CODE_SUCCESS ==
-            (msg_push_status = msg_queue_handler_push(context->obj,
-                                                      context->msg.in))) {
+        if (MSG_Q_CODE_SUCCESS == (msg_push_status = msg_queue_handler_push(
+                context->obj, context->msg.in))) {
             break;
         }
         if (MSG_Q_CODE_FULL != msg_push_status) {
             LOGE("failed(%d) on push msg", msg_push_status);
             break;
         }
-    } while (1);
-//        LOGV("<-- push out with status: %d", msg_push_status);
+        usleep(10U * 1000U); // <-- full, wait a moment and retry.
+    } while (++retry_count < MAX_PUSH_RETRY_COUNT);
+    if (MSG_Q_CODE_SUCCESS != msg_push_status && 0 != retry_count) {
+        LOGE_TRACE("failed on push after retry_count:%u", retry_count);
+    }
+//        LOGV("<-- push finished with status: %d", msg_push_status);
 
     return (jint) msg_push_status;
 }
@@ -209,29 +225,16 @@ JNIEXPORT jint JNICALL
 Java_com_threshold_jni_MsgQueueHandlerJni_destroy(JNIEnv *env, jclass clazz,
                                                   jlongArray _handle_holder) {
     (void) clazz;
-    jint ret = -1;
+    int ret;
 
     LOGD(" --> destroy in...");
     jlong *handle_holder = (*env)->GetLongArrayElements(env, _handle_holder, NULL);
     msg_queue_jni_context_t *context = LONG64_TO_PTR(handle_holder[0]);
-    do {
-        if (NULL == context) {
-            break;
-        }
-        msg_queue_handler_destroy(&context->obj);
-        CLEANUP_MSG(context, in);
-        pri_cleanup_jobj_cache(env, context);
-        if (context->cb_data.m_obj) {
-            (*env)->DeleteGlobalRef(env, context->cb_data.m_obj);
-            context->cb_data.m_obj = NULL;
-        }
-        ret = 0;
-    } while (0);
-
+    ret = pri_destroy_jni_context(env, context);
     handle_holder[0] = 0;
     (*env)->ReleaseLongArrayElements(env, _handle_holder, handle_holder, 0);
     LOGI(" <-- destroyed done! %d", (int) ret);
-    return ret;
+    return (jint) ret;
 }
 
 //==================================================================================================
@@ -299,6 +302,26 @@ static void pri_recreate_jobj_cache(JNIEnv *env,
     context->cache.obj_capacity = new_obj_capacity;
     jbyteArray msg_obj_array = (*env)->NewByteArray(env, new_obj_capacity);
     context->cache.j_obj = (*env)->NewGlobalRef(env, msg_obj_array);
+}
+
+static int pri_destroy_jni_context(JNIEnv *env, msg_queue_jni_context_t *context) {
+    int ret = -1;
+    do {
+        if (NULL == context) {
+            break;
+        }
+        if (context->obj) {
+            msg_queue_handler_destroy(&(context->obj));
+        }
+        CLEANUP_MSG(context, in);
+        pri_cleanup_jobj_cache(env, context);
+        if (context->cb_data.m_obj) {
+            (*env)->DeleteGlobalRef(env, context->cb_data.m_obj);
+            context->cb_data.m_obj = NULL;
+        }
+        ret = 0;
+    } while (0);
+    return ret;
 }
 
 

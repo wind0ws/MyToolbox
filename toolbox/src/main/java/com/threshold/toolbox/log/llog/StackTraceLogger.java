@@ -44,7 +44,7 @@ class StackTraceLogger implements StackTraceLog,Printer {
     StackTraceLogger(final Printer printer) {
         this.mLogPrinter = printer;
         final String lineSeparator = System.getProperty("line.separator");
-        LINE_SEPARATOR = (lineSeparator == null ? "\n" : lineSeparator);
+        LINE_SEPARATOR = (null == lineSeparator ? "\n" : lineSeparator);
     }
 
     @Override
@@ -216,8 +216,8 @@ class StackTraceLogger implements StackTraceLog,Printer {
         if (obj instanceof String) {
             internalPrintLog(methodCallPosition, DEBUG, obj.toString());
         } else if (obj instanceof Collection) {
-            @SuppressWarnings("rawtypes")
-            final Collection collection = (Collection) obj;
+//            @SuppressWarnings("rawtypes")
+            final Collection<Object> collection = (Collection<Object>) obj;
             String msg = " %s size = %d \n%s {\n";
             msg = String.format(msg, simpleName, collection.size(), HORIZONTAL_DOUBLE_LINE);
             if (!collection.isEmpty()) {
@@ -230,7 +230,6 @@ class StackTraceLogger implements StackTraceLog,Printer {
                             .append(MIDDLE_BORDER).append(LINE_SEPARATOR);
                 }
                 stringBuilder.append(HORIZONTAL_DOUBLE_LINE).append(msg);
-                //noinspection all
                 final Iterator<Object> iterator = collection.iterator();
                 int index = 0;
                 while (iterator.hasNext()) {
@@ -247,7 +246,7 @@ class StackTraceLogger implements StackTraceLog,Printer {
                 internalPrintLog(tag, ERROR, msg + " and collection is empty ]");
             }
         } else if (obj instanceof Map) {
-            //noinspection all
+            // noinspection all
             final Map<Object, Object> map = (Map<Object, Object>) obj;
             final Set<Object> keys = map.keySet();
             if (keys.size() > 0) {
@@ -300,7 +299,7 @@ class StackTraceLogger implements StackTraceLog,Printer {
         } else {
             tag = "LLog";
         }
-        //noinspection all
+        // noinspection all
         return tag;
     }
 
@@ -337,18 +336,18 @@ class StackTraceLogger implements StackTraceLog,Printer {
         if (lineNumber < 0) {
             // no source. maybe minifyEnabled, now we try to search TAG filed in class
             final String tagFoundFromCache = mTagFinderCache.findTag(className);
-            //if tag cache is "" represent that we searched TAG before, but no TAG found in class.
+            // if tag cache is "", it represent that we searched TAG before, but no TAG found in class.
             if (!"".equals(tagFoundFromCache)) {
                 tag = tagFoundFromCache;
             }
         }
-        if (tag == null) {
+        if (null == tag) {
             tag = className.substring(className.lastIndexOf(".") + 1) + "." + methodName
                     + " (" + fileName + ":" + lineNumber + ") ";
         }
 
         values[0] = tag;
-        values[1] = fileName == null ? "" : fileName;
+        values[1] = (null == fileName) ? "" : fileName;
         return values;
     }
 }

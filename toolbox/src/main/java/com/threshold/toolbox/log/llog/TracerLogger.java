@@ -4,6 +4,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
+
 import com.threshold.toolbox.log.*;
 
 import static com.threshold.toolbox.log.LogPriority.*;
@@ -32,8 +33,8 @@ public class TracerLogger extends AbsLogger {
             return this;
         }
         final boolean hasTag = !TextUtils.isEmpty(tag);
-        String msg = (args == null || args.length == 0) ? format : String.format(format, args);
-        if (tr != null) {
+        String msg = (null == args || args.length == 0) ? format : String.format(format, args);
+        if (null != tr) {
             msg = String.format("%s\n occurred throwable:\n%s", msg, Log.getStackTraceString(tr));
         }
         switch (logLevel) {

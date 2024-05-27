@@ -88,7 +88,7 @@ public class LLog {
     }
 
     /**
-     * print object(support Collection,Map)
+     * print object(also support Collection, Map)
      */
     public static void obj(Object obj) {
         STACK_TRACE_LOG.obj(TraceUtil.getStackTrace(), obj);

@@ -11,22 +11,21 @@ import java.util.Arrays;
 @LogTag("LogTest")
 public class LogTest {
 
-    @SuppressWarnings("all")
-    private static class StackTraceLoggerHolder {
+    private static class StackTraceLoggerHolder4Test {
 
         public static final ILog sLog;
 
         static {
             sLog = LoggerFactory.create(LoggerFactory.LOG_STRATEGY_WITH_TRACE,
                     null, 0,
-                    new SimpleDiskPrinter(new File("/sdcard/logtest.log"),
+                    new SimpleDiskPrinter(new File("/sdcard/log_test.log"),
                             0, new LogcatPrinter(), true));
 //            sLog = new TracerLogger();
         }
 
     }
 
-    private static final ILog sLog = StackTraceLoggerHolder.sLog;
+    private static final ILog sLog = StackTraceLoggerHolder4Test.sLog;
 
     @BeforeClass
     public static void setupClz() {

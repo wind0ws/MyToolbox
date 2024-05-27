@@ -9,47 +9,54 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Random;
+
 @RunWith(AndroidJUnit4.class)
 public class MsgQueueHandlerJniTest {
-
-    private final long[] mHandleHolder = new long[]{0};
 
     @Test
     public void test() {
         int ret;
+        final Random random = new Random(SystemClock.currentThreadTimeMillis());
         final MsgQueueHandlerJni.MsgQueueHandlerParam queueHandlerParam =
                 new MsgQueueHandlerJni.MsgQueueHandlerParam(8192,
                         new MsgQueueHandlerJni.OnReceiveMsgListener() {
                     @Override
                     public int handleMsg(final int what, final int arg1, final int arg2,
                                          final byte[] obj, final int objLen) {
-                        LLog.i("received event: what=%d, arg1=%d, arg2=%d, obj_len=%d, my_id=%d",
-                                what, arg1, arg2, objLen, (int)(obj[arg2]));
+                        // mock doing heavy task
+                        SystemClock.sleep(10 + random.nextInt(10));
+                        LLog.i("received event: what=%d, arg1=%d, arg2=%d, obj_len=%d. " +
+                                        " last_byte=%d",
+                                what, arg1, arg2, objLen,
+                                (null == obj || objLen <= arg2) ? -9999 : (int)(obj[arg2]));
                         return 0;
                     }
                 });
-        ret = MsgQueueHandlerJni.init(mHandleHolder, queueHandlerParam);
-        LLog.d("init ret=%d, handle=%d", ret, mHandleHolder[0]);
-        Assert.assertEquals(ret, 0);
 
-        final MsgQueueHandlerJni.MsgQueueData data = new MsgQueueHandlerJni.MsgQueueData();
-        data.what = 1;
-        data.arg1 = 2;
-        data.arg2 = 3;
+        final MsgQueueHandlerJni.Helper msgQueueHelper = new MsgQueueHandlerJni.Helper(queueHandlerParam);
+        final MsgQueueHandlerJni.MsgQueueData data = new MsgQueueHandlerJni.MsgQueueData(1,2,3);
         data.obj = new byte[1024];
-        for (int i = 0; i < data.obj.length; i++) {
-            data.obj[i] = (byte) i;
+        for (int i = 0; i < data.obj.length; ++i) {
+            // generate mock data.
+            data.objLen = i;
+            if (i > 0) {
+                data.arg2 = i - 1;
+                data.obj[i - 1] = (byte) i;
+            }
 
-            data.arg2 = i;
-            ret = MsgQueueHandlerJni.feedMsg(mHandleHolder[0],
-                    data.what, data.arg1, data.arg2, data.obj, data.obj.length);
+            while (MsgQueueHandlerJni.Helper.CODE_ERROR_FULL == (ret = msgQueueHelper.feedMsg(data))) {
+                LLog.w("produce msg too fast, maybe we should slower, later we will retry again!");
+                SystemClock.sleep(100);
+            }
+
             LLog.d("feed msg ret=%d", ret);
             Assert.assertEquals(ret, 0);
 //            SystemClock.sleep(100);
         }
         SystemClock.sleep(1000);
 
-        ret = MsgQueueHandlerJni.destroy(mHandleHolder);
+        ret = msgQueueHelper.destroy();
         LLog.d("destroy ret=%d", ret);
         Assert.assertEquals(ret, 0);
 
