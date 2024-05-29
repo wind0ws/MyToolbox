@@ -12,8 +12,17 @@
 typedef struct {
     msg_queue_handler obj;
 
+    // flag to stop handle msg.
+    bool flag_exit;
+
     struct {
+        // global vm. get it from env.
         JavaVM *jvm;
+        // each native thread should have it's own env.
+        // here we only have one thread(in "handle_queue_msg") callback to java, so just one env.
+        JNIEnv *env;
+        // indicate native thread whether attached to jvm.
+        bool attached_thread;
         jclass m_cls;
         jmethodID m_method_id;
         jobject m_obj;
@@ -161,6 +170,10 @@ Java_com_threshold_jni_MsgQueueHandlerJni_feedMsg(JNIEnv *env, jclass clazz,
     if (!context) {
         return -1;
     }
+    if (context->flag_exit) {
+        LOGE_TRACE("you can't feedMsg anymore, because now is going to destroy!");
+        return -2;
+    }
 
     jbyteArray j_obj_array = _obj;
     bool valid_msg = false;
@@ -241,20 +254,34 @@ Java_com_threshold_jni_MsgQueueHandlerJni_destroy(JNIEnv *env, jclass clazz,
 
 static int handle_queue_msg(queue_msg_t *msg_p, void *user_data) {
     msg_queue_jni_context_t *context = (msg_queue_jni_context_t *) user_data;
-    JNIEnv *env = NULL;
-    jboolean jvm_attached = JNI_FALSE;
-    int status;
 
-    // get env from current thread
-    status = (*(context->cb_data.jvm))->GetEnv(context->cb_data.jvm,
-                                               (void **) &env, JNI_VERSION_1_6);
-    if (status < 0) {
-        status = (*(context->cb_data.jvm))->AttachCurrentThread(context->cb_data.jvm, &env, NULL);
-        if (status < 0) {
-            LOGE_TRACE("oops: vm->AttachCurrentThread error(%d). lost msg!!!", status);
-            return 1;
+    // detach this thread if necessary.
+    if (context->flag_exit) {
+        if (!context->cb_data.attached_thread) {
+            return 0;
         }
-        jvm_attached = JNI_TRUE;
+        LOGI_TRACE(" detect the flag_exit == true, so now call vm->DetachCurrentThread");
+        (*(context->cb_data.jvm))->DetachCurrentThread(context->cb_data.jvm);
+        context->cb_data.env = NULL; // <-- env get it from jvm, now dereference it.
+        context->cb_data.attached_thread = false;
+        return 0; // return positive number will break the chain. and it's ok to do that.
+    }
+
+    // get env and attach to this thread once.
+    if (NULL == context->cb_data.env) {
+        int status = (*(context->cb_data.jvm))->GetEnv(
+                context->cb_data.jvm, (void **) &(context->cb_data.env), JNI_VERSION_1_6);
+        if (status < 0) {
+            status = (*(context->cb_data.jvm))->AttachCurrentThread(
+                    context->cb_data.jvm, &(context->cb_data.env), NULL);
+            if (status < 0) {
+                LOGE_TRACE("oops: vm->AttachCurrentThread error(%d). "
+                           "msg_queue_handler now exit.", status);
+                return 1; // now we have no options to handle this situation, so we break the chain.
+            }
+            context->cb_data.attached_thread = true;
+            LOGI_TRACE("succeed on vm->AttachCurrentThread");
+        }
     }
 
     jbyteArray msg_obj_array = NULL;
@@ -264,22 +291,25 @@ static int handle_queue_msg(queue_msg_t *msg_p, void *user_data) {
         }
         //msg_obj_array = (*env)->NewByteArray(env, (jsize) msg_p->obj_len);
         if (msg_p->obj_len > context->cache.obj_capacity) {
-            pri_recreate_jobj_cache(env, context, ((jsize) msg_p->obj_len * 2));
+            pri_recreate_jobj_cache(context->cb_data.env, context,
+                                    ((jsize) msg_p->obj_len * 2));
         }
         msg_obj_array = context->cache.j_obj;
-        (*env)->SetByteArrayRegion(env, msg_obj_array, 0, (jsize) msg_p->obj_len,
-                                   (jbyte *) msg_p->obj);
+        (*(context->cb_data.env))->SetByteArrayRegion(context->cb_data.env, msg_obj_array, 0,
+                                                      (jsize) msg_p->obj_len, (jbyte *) msg_p->obj);
     } while (0);
 
-    jint user_ret = (*env)->CallIntMethod(env, context->cb_data.m_obj, context->cb_data.m_method_id,
-                                          msg_p->what, msg_p->arg1, msg_p->arg2,
-                                          msg_obj_array, msg_p->obj_len);
+    jint user_ret = (*(context->cb_data.env))->CallIntMethod(
+            (context->cb_data.env), context->cb_data.m_obj, context->cb_data.m_method_id,
+            msg_p->what, msg_p->arg1, msg_p->arg2,
+            msg_obj_array, msg_p->obj_len);
     if (0 != user_ret) {
         LOGE_TRACE("user handle msg err:%d", user_ret);
     }
-    if (jvm_attached) {
-        (*(context->cb_data.jvm))->DetachCurrentThread(context->cb_data.jvm);
-    }
+    // detach current thread at this method beginning
+//    if (jvm_attached) {
+//        (*(context->cb_data.jvm))->DetachCurrentThread(context->cb_data.jvm);
+//    }
     return (int) user_ret;
 }
 
@@ -310,7 +340,25 @@ static int pri_destroy_jni_context(JNIEnv *env, msg_queue_jni_context_t *context
         if (NULL == context) {
             break;
         }
+        context->flag_exit = true;
+
         if (context->obj) {
+            if (context->msg.in) {
+                MSG_Q_CODE msg_push_status;
+                // any msg, we don't care, we just need find "flag_exit" in callback
+                // and detach from that callback thread.
+                context->msg.in->obj_len = 0;
+                while (MSG_Q_CODE_SUCCESS != (msg_push_status = msg_queue_handler_push(
+                        context->obj, context->msg.in))) {
+                    LOGD(" wait last msg push to queue... last_push_status:%d",
+                         (int) msg_push_status);
+                }
+                LOGI(" pushed last msg done, now wait it processed...");
+                while (context->cb_data.attached_thread) {
+                    usleep(2 * 1000);
+                }
+                LOGI(" last msg processed done... now we are going to destroy msg_queue_handler");
+            }
             msg_queue_handler_destroy(&(context->obj));
         }
         CLEANUP_MSG(context, in);
@@ -319,6 +367,8 @@ static int pri_destroy_jni_context(JNIEnv *env, msg_queue_jni_context_t *context
             (*env)->DeleteGlobalRef(env, context->cb_data.m_obj);
             context->cb_data.m_obj = NULL;
         }
+        context->cb_data.env = NULL;
+        context->cb_data.jvm = NULL;
         ret = 0;
     } while (0);
     return ret;

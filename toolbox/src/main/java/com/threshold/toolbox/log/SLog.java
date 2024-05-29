@@ -48,7 +48,8 @@ public class SLog {
     }
 
     /**
-     * init {@link SLog} with a {@link LogcatPrinter}
+     * init {@link SLog} with a {@link LogcatPrinter}.
+     * only needs to be initialized once throughout the entire process runtime.
      */
     public static void init() {
         init(new LogcatPrinter());

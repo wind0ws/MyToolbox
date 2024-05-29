@@ -3,16 +3,24 @@ package com.threshold.jni;
 import android.os.SystemClock;
 import android.support.test.runner.AndroidJUnit4;
 
-import com.threshold.toolbox.log.llog.LLog;
+import com.threshold.toolbox.log.LogTag;
+import com.threshold.toolbox.log.SLog;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Random;
 
 @RunWith(AndroidJUnit4.class)
+@LogTag("MsgQTest")
 public class MsgQueueHandlerJniTest {
+
+    @BeforeClass
+    public static void setup() {
+        SLog.init();
+    }
 
     @Test
     public void test() {
@@ -26,7 +34,7 @@ public class MsgQueueHandlerJniTest {
                                          final byte[] obj, final int objLen) {
                         // mock doing heavy task
                         SystemClock.sleep(10 + random.nextInt(10));
-                        LLog.i("received event: what=%d, arg1=%d, arg2=%d, obj_len=%d. " +
+                        SLog.i("received event: what=%d, arg1=%d, arg2=%d, obj_len=%d. " +
                                         " last_byte=%d",
                                 what, arg1, arg2, objLen,
                                 (null == obj || objLen <= arg2) ? -9999 : (int)(obj[arg2]));
@@ -46,21 +54,23 @@ public class MsgQueueHandlerJniTest {
             }
 
             while (MsgQueueHandlerJni.Helper.CODE_ERROR_FULL == (ret = msgQueueHelper.feedMsg(data))) {
-                LLog.w("produce msg too fast, maybe we should slower, later we will retry again!");
+                SLog.w("produce msg too fast, maybe we should slower, later we will retry again!");
                 SystemClock.sleep(100);
             }
 
-            LLog.d("feed msg ret=%d", ret);
+            if (0 != ret) {
+                SLog.d("feed msg ret=%d", ret);
+            }
             Assert.assertEquals(ret, 0);
 //            SystemClock.sleep(100);
         }
         SystemClock.sleep(1000);
 
         ret = msgQueueHelper.destroy();
-        LLog.d("destroy ret=%d", ret);
+        SLog.d("destroy ret=%d", ret);
         Assert.assertEquals(ret, 0);
 
-        LLog.i("bye bye... %d", ret);
+        SLog.i("bye bye... %d", ret);
     }
 
 }
