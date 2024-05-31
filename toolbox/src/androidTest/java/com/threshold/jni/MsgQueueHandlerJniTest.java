@@ -54,12 +54,12 @@ public class MsgQueueHandlerJniTest {
             }
 
             while (MsgQueueHandlerJni.Helper.CODE_ERROR_FULL == (ret = msgQueueHelper.feedMsg(data))) {
-                SLog.w("produce msg too fast, maybe we should slower, later we will retry again!");
+                SLog.w("produce msg too fast, maybe we should slower, later we will try again!");
                 SystemClock.sleep(100);
             }
 
             if (0 != ret) {
-                SLog.d("feed msg ret=%d", ret);
+                SLog.d("failed(%d) on feedMsg, the msg lost!", ret);
             }
             Assert.assertEquals(ret, 0);
 //            SystemClock.sleep(100);

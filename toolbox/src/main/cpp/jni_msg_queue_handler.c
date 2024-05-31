@@ -70,6 +70,8 @@ static void pri_cleanup_jobj_cache(JNIEnv *env, msg_queue_jni_context_t *context
 static void pri_recreate_jobj_cache(JNIEnv *env,
                                     msg_queue_jni_context_t *context, jsize new_obj_capacity);
 
+static void pri_on_msg_q_handler_status_changed(msg_q_handler_status_e status, void *user_data);
+
 static int handle_queue_msg(queue_msg_t *msg_p, void *user_data);
 
 JNIEXPORT jint JNICALL
@@ -140,10 +142,13 @@ Java_com_threshold_jni_MsgQueueHandlerJni_init(JNIEnv *env, jclass clazz,
             LOGE("failed on lookup callback function: \"%s\"", str_cb_name);
             break;
         }
-
+        msg_queue_handler_init_param_t msg_q_init_param;
+        memset(&msg_q_init_param, 0, sizeof(msg_queue_handler_init_param_t));
+        msg_q_init_param.user_data = context;
+        msg_q_init_param.fn_handle_msg = handle_queue_msg;
+        msg_q_init_param.fn_on_status_changed = pri_on_msg_q_handler_status_changed;
         if (NULL == (context->obj = msg_queue_handler_create(j_buf_size,
-                                                             handle_queue_msg,
-                                                             context))) {
+                                                             &msg_q_init_param))) {
             LOGI("failed on init msg_queue_handler_create");
             break;
         }
@@ -165,7 +170,7 @@ Java_com_threshold_jni_MsgQueueHandlerJni_feedMsg(JNIEnv *env, jclass clazz,
                                                   jlong _handle, jint _what, jint _arg1, jint _arg2,
                                                   jbyteArray _obj, jint _obj_len) {
     (void) clazz;
-    MSG_Q_CODE msg_push_status = MSG_Q_CODE_GENERIC_FAIL;
+    msg_q_code_e msg_push_status = MSG_Q_CODE_GENERIC_FAIL;
     msg_queue_jni_context_t *context = LONG64_TO_PTR(_handle);
     if (!context) {
         return -1;
@@ -226,7 +231,7 @@ Java_com_threshold_jni_MsgQueueHandlerJni_feedMsg(JNIEnv *env, jclass clazz,
         usleep(10U * 1000U); // <-- full, wait a moment and retry.
     } while (++retry_count < MAX_PUSH_RETRY_COUNT);
     if (MSG_Q_CODE_SUCCESS != msg_push_status && 0 != retry_count) {
-        LOGE_TRACE("failed on push after retry_count:%u", retry_count);
+        LOGE_TRACE("failed(%d) on push after retry_count:%u", msg_push_status, retry_count);
     }
 //        LOGV("<-- push finished with status: %d", msg_push_status);
 
@@ -252,36 +257,56 @@ Java_com_threshold_jni_MsgQueueHandlerJni_destroy(JNIEnv *env, jclass clazz,
 
 //==================================================================================================
 
+static void pri_on_msg_q_handler_status_changed(msg_q_handler_status_e status, void *user_data) {
+    LOGI_TRACE("hey, detected msg_queue_handler new status: %d", status);
+    msg_queue_jni_context_t *context = (msg_queue_jni_context_t *) user_data;
+    switch (status) {
+        case MSG_Q_HANDLER_STATUS_READY_TO_GO: {
+            // get env and attach to this thread once.
+            LOGI("detected msg_queue_handler status: READY_TO_GO, now try attach it.");
+            ASSERT_ABORT(NULL == context->cb_data.env);
+            int env_status = (*(context->cb_data.jvm))->GetEnv(
+                    context->cb_data.jvm, (void **) &(context->cb_data.env), JNI_VERSION_1_6);
+            if (env_status < 0) {
+                env_status = (*(context->cb_data.jvm))->AttachCurrentThread(
+                        context->cb_data.jvm, &(context->cb_data.env), NULL);
+                if (env_status < 0) {
+                    LOGE_TRACE("oops: vm->AttachCurrentThread error(%d). ", env_status);
+                    break;
+                }
+                context->cb_data.attached_thread = true;
+                LOGI_TRACE("succeed on vm->AttachCurrentThread");
+            }
+        }
+            break;
+        case MSG_Q_HANDLER_STATUS_ABOUT_TO_STOP: {
+            // detach this thread if necessary.
+            LOGI("detected msg_queue_handler status: ABOUT_TO_STOP, now try detach it.");
+            if (!context->cb_data.attached_thread) {
+                break;
+            }
+            LOGI_TRACE(" now call vm->DetachCurrentThread");
+            (*(context->cb_data.jvm))->DetachCurrentThread(context->cb_data.jvm);
+            context->cb_data.env = NULL; // <-- env get it from jvm, now dereference it.
+            context->cb_data.attached_thread = false;
+        }
+            break;
+        default:
+            LOGE_TRACE("unhandled status: %d", status);
+            break;
+    }
+}
+
 static int handle_queue_msg(queue_msg_t *msg_p, void *user_data) {
     msg_queue_jni_context_t *context = (msg_queue_jni_context_t *) user_data;
 
-    // detach this thread if necessary.
     if (context->flag_exit) {
-        if (!context->cb_data.attached_thread) {
-            return 0;
-        }
-        LOGI_TRACE(" detect the flag_exit == true, so now call vm->DetachCurrentThread");
-        (*(context->cb_data.jvm))->DetachCurrentThread(context->cb_data.jvm);
-        context->cb_data.env = NULL; // <-- env get it from jvm, now dereference it.
-        context->cb_data.attached_thread = false;
         return 0; // return positive number will break the chain. and it's ok to do that.
     }
 
-    // get env and attach to this thread once.
-    if (NULL == context->cb_data.env) {
-        int status = (*(context->cb_data.jvm))->GetEnv(
-                context->cb_data.jvm, (void **) &(context->cb_data.env), JNI_VERSION_1_6);
-        if (status < 0) {
-            status = (*(context->cb_data.jvm))->AttachCurrentThread(
-                    context->cb_data.jvm, &(context->cb_data.env), NULL);
-            if (status < 0) {
-                LOGE_TRACE("oops: vm->AttachCurrentThread error(%d). "
-                           "msg_queue_handler now exit.", status);
-                return 1; // now we have no options to handle this situation, so we break the chain.
-            }
-            context->cb_data.attached_thread = true;
-            LOGI_TRACE("succeed on vm->AttachCurrentThread");
-        }
+    if (NULL ==
+        context->cb_data.env) { // env should succeed get from "MSG_Q_HANDLER_STATUS_STARTED"
+        return 1; // we have no options to handle this situation, so we break the chain.
     }
 
     jbyteArray msg_obj_array = NULL;
@@ -304,12 +329,9 @@ static int handle_queue_msg(queue_msg_t *msg_p, void *user_data) {
             msg_p->what, msg_p->arg1, msg_p->arg2,
             msg_obj_array, msg_p->obj_len);
     if (0 != user_ret) {
-        LOGE_TRACE("user handle msg err:%d", user_ret);
+        LOGE_TRACE("user handle msg err:%d, queue_msg_handler is going to stop.", user_ret);
+        context->flag_exit = true;
     }
-    // detach current thread at this method beginning
-//    if (jvm_attached) {
-//        (*(context->cb_data.jvm))->DetachCurrentThread(context->cb_data.jvm);
-//    }
     return (int) user_ret;
 }
 
@@ -343,22 +365,6 @@ static int pri_destroy_jni_context(JNIEnv *env, msg_queue_jni_context_t *context
         context->flag_exit = true;
 
         if (context->obj) {
-            if (context->msg.in) {
-                MSG_Q_CODE msg_push_status;
-                // any msg, we don't care, we just need find "flag_exit" in callback
-                // and detach from that callback thread.
-                context->msg.in->obj_len = 0;
-                while (MSG_Q_CODE_SUCCESS != (msg_push_status = msg_queue_handler_push(
-                        context->obj, context->msg.in))) {
-                    LOGD(" wait last msg push to queue... last_push_status:%d",
-                         (int) msg_push_status);
-                }
-                LOGI(" pushed last msg done, now wait it processed...");
-                while (context->cb_data.attached_thread) {
-                    usleep(2 * 1000);
-                }
-                LOGI(" last msg processed done... now we are going to destroy msg_queue_handler");
-            }
             msg_queue_handler_destroy(&(context->obj));
         }
         CLEANUP_MSG(context, in);
