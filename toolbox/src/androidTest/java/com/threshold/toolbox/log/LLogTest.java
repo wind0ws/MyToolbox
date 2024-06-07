@@ -1,7 +1,7 @@
 package com.threshold.toolbox.log;
 
-import android.support.annotation.NonNull;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.annotation.NonNull;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.threshold.toolbox.log.llog.LLog;
 
@@ -13,8 +13,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@RunWith(AndroidJUnit4.class)
 @LogTag("LogTest")
+@RunWith(AndroidJUnit4.class)
 public class LLogTest {
 
     private static class UserInfo4Test {

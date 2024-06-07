@@ -1,7 +1,7 @@
 package com.threshold.toolbox.log.llog;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import com.threshold.toolbox.log.LogcatPrinter;
 
 class TraceLoggerDefaultPrinter extends LogcatPrinter {

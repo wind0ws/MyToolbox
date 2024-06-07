@@ -1,6 +1,6 @@
 package com.threshold.toolbox.log;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 /**
  * project name: MyToolBox

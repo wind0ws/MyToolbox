@@ -1,7 +1,7 @@
 package com.threshold.jni;
 
-import android.support.annotation.Keep;
-import android.support.annotation.Nullable;
+import androidx.annotation.Keep;
+import androidx.annotation.Nullable;
 
 import com.threshold.toolbox.log.LogTag;
 import com.threshold.toolbox.log.SLog;

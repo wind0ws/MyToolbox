@@ -1,6 +1,6 @@
 package com.threshold.mytoolbox.jni
 
-import android.support.test.runner.AndroidJUnit4
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import junit.framework.TestCase.assertEquals
 import org.junit.BeforeClass
 import org.junit.Test

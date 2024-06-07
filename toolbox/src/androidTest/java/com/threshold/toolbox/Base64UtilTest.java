@@ -1,16 +1,17 @@
 package com.threshold.toolbox;
 
-import android.support.test.runner.AndroidJUnit4;
-import android.util.Log;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
+import com.threshold.toolbox.log.LogTag;
+import com.threshold.toolbox.log.SLog;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+@LogTag("Base64UtilTest")
 @RunWith(AndroidJUnit4.class)
 public class Base64UtilTest {
-
-    private static final String TAG = Base64UtilTest.class.getSimpleName();
 
     @Test
     public void testEncodeDecode() {
@@ -18,10 +19,10 @@ public class Base64UtilTest {
         String origin = "{main:{\"key1\"=\"value1\"},sub:\"abc\"}";
         String originEncode = "e21haW46eyJrZXkxIj0idmFsdWUxIn0sc3ViOiJhYmMifQ==";
         String encode = Base64Util.encodeString(origin);
-        Log.d(TAG, encode);
+        SLog.d("encode: %s", encode);
         Assert.assertEquals("encode Not equals",originEncode,encode);
         String decode = Base64Util.decodeString(originEncode);
-        Log.d(TAG, decode);
+        SLog.d("decode: %s", decode);
         Assert.assertEquals("decode not equals",origin,decode);
 
     }

@@ -2,8 +2,8 @@ package com.threshold.toolbox;
 
 import android.content.Context;
 import android.os.SystemClock;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -13,7 +13,7 @@ public class ToastUtilTest {
     @Test
     public void testToast() {
         // Context of the app under test.
-        Context appContext = InstrumentationRegistry.getTargetContext();
+        Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         for (int i = 0; i < 10; i++) {
             if (i < 5) {
                 ToastUtil.showShort(appContext, "Show " + i);

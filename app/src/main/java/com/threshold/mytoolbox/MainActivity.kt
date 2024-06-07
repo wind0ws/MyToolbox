@@ -1,13 +1,13 @@
 package com.threshold.mytoolbox
 
 import android.os.Build
-import android.support.v7.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
 import com.threshold.permissions.PermissionController
 import com.threshold.permissions.SystemSettingUtils
-import com.threshold.toolbox.DensityUtil
 import kotlinx.android.synthetic.main.activity_main.*
 import com.threshold.toolbox.ToastUtil
 import com.threshold.toolbox.log.LogTag
@@ -22,7 +22,7 @@ class MainActivity : AppCompatActivity(), PermissionController.OnPermissionChang
 //        val TAG = "MainActivity"
 //    }
 
-    private val mHandler = Handler()
+    private val mHandler = Handler(Looper.myLooper()!!)
     private var mToastTimes = 0
     private val mPermissionController = PermissionController(this)
 
@@ -33,6 +33,7 @@ class MainActivity : AppCompatActivity(), PermissionController.OnPermissionChang
 
         // now request permission from user
         mPermissionController.init(this)
+
 
         tv1.text = applicationInfo.nativeLibraryDir
         SLog.i("nativeLibraryDir=${applicationInfo.nativeLibraryDir}")

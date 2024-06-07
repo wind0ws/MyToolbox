@@ -1,6 +1,6 @@
 package com.threshold.toolbox.log;
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 import static com.threshold.toolbox.log.LogPriority.*;
 

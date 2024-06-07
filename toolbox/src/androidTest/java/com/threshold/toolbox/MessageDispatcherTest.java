@@ -1,7 +1,7 @@
 package com.threshold.toolbox;
 
 import android.os.SystemClock;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.threshold.toolbox.log.SLog;
 
@@ -16,12 +16,10 @@ public class MessageDispatcherTest implements MessageDispatcher.EventListener {
 
     @SuppressWarnings("all")
     public static class AEvent {
-
     }
 
     @SuppressWarnings("all")
     public static class BEvent {
-
     }
 
     @Test

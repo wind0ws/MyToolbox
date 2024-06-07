@@ -1,6 +1,7 @@
 package com.threshold.toolbox;
 
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
 import android.util.Log;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -12,7 +13,7 @@ public class StoragePathUtilTest {
 
     @Test
     public void testStorageInfo() {
-//        final Context targetContext = InstrumentationRegistry.getTargetContext();
+//        final Context targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
 //        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
 //            final StoragePathUtil.StoragePathInfo storagePathInfo = StoragePathUtil.check(targetContext);
 //            Log.d("StoragePathUtil", "check complete.");

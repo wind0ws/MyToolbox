@@ -1,7 +1,7 @@
 package com.threshold.toolbox.log;
 
 import android.os.SystemClock;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import java.io.File;

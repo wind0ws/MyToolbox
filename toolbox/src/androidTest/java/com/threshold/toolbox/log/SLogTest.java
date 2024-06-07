@@ -1,7 +1,7 @@
 package com.threshold.toolbox.log;
 
 import android.os.SystemClock;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -14,8 +14,8 @@ import java.util.Arrays;
  * time: 2019/6/6 16:12
  * change:
  */
-@RunWith(AndroidJUnit4.class)
 @LogTag("SLogTest")
+@RunWith(AndroidJUnit4.class)
 public class SLogTest {
 
 //    private static final String TAG = "SLogTag";

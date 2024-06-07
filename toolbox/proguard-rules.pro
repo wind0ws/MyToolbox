@@ -35,10 +35,10 @@
 -dontshrink
 -obfuscationdictionary dictionary_rules.txt
 -classobfuscationdictionary dictionary_rules.txt
--dontwarn android.support.annotation.Keep
--keep @android.support.annotation.Keep class **{
-    @android.support.annotation.Keep <fields>;
-    @android.support.annotation.Keep <methods>;
+-dontwarn androidx.annotation.Keep
+-keep @androidx.annotation.Keep class **{
+    @androidx.annotation.Keep <fields>;
+    @androidx.annotation.Keep <methods>;
 }
 
 # For enumeration classes, see http://proguard.sourceforge.net/manual/examples.html#enumerations
@@ -65,7 +65,7 @@
 # platform version.  We know about them, and they are safe.
 #忽略support包因为版本兼容产生的警告
 -dontwarn android.support.**
-
+-dontwarn androidx.**
 
 #--->jni native function
 -keepclassmembers class * {
