@@ -3,10 +3,11 @@ package com.threshold.toolbox;
 import android.os.SystemClock;
 import android.support.test.runner.AndroidJUnit4;
 
+import com.threshold.toolbox.log.SLog;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import com.threshold.toolbox.log.llog.LLog;
 
 @RunWith(AndroidJUnit4.class)
 public class MessageDispatcherTest implements MessageDispatcher.EventListener {
@@ -38,11 +39,11 @@ public class MessageDispatcherTest implements MessageDispatcher.EventListener {
 
     @Override
     public void onEvent(final Object event) {
-        LLog.d("receive event => " + event.toString());
+        SLog.d("receive event => " + event.toString());
         if (event instanceof AEvent) {
-            LLog.d("it is AEvent");
+            SLog.d("it is AEvent");
         } else if (event instanceof BEvent) {
-            LLog.d("it is BEvent");
+            SLog.d("it is BEvent");
         }
     }
 }

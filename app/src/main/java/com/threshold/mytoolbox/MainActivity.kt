@@ -10,8 +10,8 @@ import com.threshold.permissions.SystemSettingUtils
 import com.threshold.toolbox.DensityUtil
 import kotlinx.android.synthetic.main.activity_main.*
 import com.threshold.toolbox.ToastUtil
-import com.threshold.toolbox.log.llog.LLog
 import com.threshold.toolbox.log.LogTag
+import com.threshold.toolbox.log.SLog
 
 @LogTag("MainAct")
 class MainActivity : AppCompatActivity(), PermissionController.OnPermissionChangedListener {
@@ -28,20 +28,20 @@ class MainActivity : AppCompatActivity(), PermissionController.OnPermissionChang
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        DensityUtil.setupDensity(application, this)
+//        DensityUtil.setupDensity(application, this)
         setContentView(R.layout.activity_main)
 
         // now request permission from user
         mPermissionController.init(this)
 
         tv1.text = applicationInfo.nativeLibraryDir
-        LLog.i("nativeLibraryDir=${applicationInfo.nativeLibraryDir}")
+        SLog.i("nativeLibraryDir=${applicationInfo.nativeLibraryDir}")
 
         val sharedLibraryFiles = applicationInfo.sharedLibraryFiles
-        LLog.i("sharedLibraryFiles=$sharedLibraryFiles")
-        LLog.i("dataDir=${applicationInfo.dataDir}")
+        SLog.i("sharedLibraryFiles=$sharedLibraryFiles")
+        SLog.i("dataDir=${applicationInfo.dataDir}")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            LLog.i("deviceProtectedDataDir=${applicationInfo.deviceProtectedDataDir}")
+            SLog.i("deviceProtectedDataDir=${applicationInfo.deviceProtectedDataDir}")
         }
 
         // Example of a call to a native method
@@ -98,7 +98,7 @@ class MainActivity : AppCompatActivity(), PermissionController.OnPermissionChang
     //call public hidden api.  must compileOnly magic android.jar
 //    private fun testHiddenPublicApi() {
 //        val id:Int = getWindowStackId()
-//        LLog.d("getWindowStackId() --> %d",id)
+//        SLog.d("getWindowStackId() --> %d",id)
 //    }
 
 

@@ -5,6 +5,7 @@ import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -13,7 +14,7 @@ import java.io.IOException;
 @RunWith(AndroidJUnit4.class)
 public class AssetsUtilTest {
 
-    private static final String TAG = AssetsUtilTest.class.getSimpleName();
+    private static final String TAG = "AssetsUtilTest";
 
     @Test
     public void testCopyAssets() throws IOException {
@@ -24,16 +25,10 @@ public class AssetsUtilTest {
 //        Log.d(TAG,"cae_bundles =" + cae_bundles.length);
 //        org.junit.Assert.assertTrue("cae_bundles length == 0",cae_bundles.length > 0);
 
-        AssetsUtil.copyAssetFolder(appContext.getAssets(), "bundles",
-                "/sdcard/asset_test/",
-                new FileUtil.FileOrDirectoryDeterminer() {
-                    @Override
-                    public boolean isFile(final String name) {
-                        return name.endsWith(".so");
-                    }
-                });
-//        AssetsUtil.copyAssetFolder(appContext.getAssets(), "testfolder", "/sdcard/test/");
-//        AssetsUtil.copyAssetFile(appContext.getAssets(), "testfolder/god.reg", "/sdcard/test/god22.reg");
+        boolean succeed = AssetsUtil.copyAssetFolder(appContext.getAssets(),
+                "bundles",
+                "/sdcard/asset_test/");
+        Assert.assertTrue(succeed);
 //        AssetsUtil.copyAssetFile(appContext.getAssets(), "cfg/optm.cfg", "/sdcard/test/optm.cfg");
         Log.d(TAG, "Copy complete.");
     }

@@ -68,14 +68,12 @@ public class AssetsUtil {
      * @param assetManager                      {@link AssetManager}
      * @param fromAssetFolderPath               such as "my_folder"
      * @param destinationFolderPath             such as "/sdcard/my_copy/"
-     * @param fileOrDirectoryDeterminer         determine a file whether is a file or directory
      * @param isOverrideIfDestinationFileExists true if file already exists, we will override it.
      * @return true if all copy task execute successfully
      */
     public static boolean copyAssetFolder(final AssetManager assetManager,
                                           String fromAssetFolderPath,
                                           final String destinationFolderPath,
-                                          final FileUtil.FileOrDirectoryDeterminer fileOrDirectoryDeterminer,
                                           final boolean isOverrideIfDestinationFileExists) {
         try {
             final File destinationFolderFile = new File(destinationFolderPath);
@@ -90,27 +88,27 @@ public class AssetsUtil {
                 }
             }
             final String[] files = assetManager.list(fromAssetFolderPath);
-            if (files != null) {
-                for (final String fileName : files) {
-                    final String fromPath = fromAssetFolderPath.endsWith("/") ?
-                            fromAssetFolderPath + fileName :
-                            fromAssetFolderPath + "/" + fileName;
-                    final String toPath = new File(destinationFolderFile, fileName).getPath();
-                    if (fileOrDirectoryDeterminer.isFile(fileName)) {
-                        succeed &= copyAssetFile(assetManager,
-                                fromPath,
-                                toPath,
-                                isOverrideIfDestinationFileExists);
-                    } else {
-                        succeed &= copyAssetFolder(assetManager,
-                                fromPath,
-                                toPath,
-                                fileOrDirectoryDeterminer,
-                                isOverrideIfDestinationFileExists);
-                    }
-                }
-            } else {
+            if (null == files || 0 == files.length) {
                 Log.w(TAG, "list() from \"" + fromAssetFolderPath + "\" is null");
+                return true;
+            }
+            for (final String fileName : files) {
+                final String fromPath = fromAssetFolderPath.endsWith("/") ?
+                        fromAssetFolderPath + fileName :
+                        fromAssetFolderPath + "/" + fileName;
+                final String toPath = new File(destinationFolderFile, fileName).getPath();
+                final String[] subPathFiles = assetManager.list(fromPath);
+                if (null == subPathFiles || 0 == subPathFiles.length) {
+                    succeed &= copyAssetFile(assetManager,
+                            fromPath,
+                            toPath,
+                            isOverrideIfDestinationFileExists);
+                } else {
+                    succeed &= copyAssetFolder(assetManager,
+                            fromPath,
+                            toPath,
+                            isOverrideIfDestinationFileExists);
+                }
             }
             return succeed;
         } catch (Exception e) {
@@ -120,18 +118,10 @@ public class AssetsUtil {
     }
 
     public static boolean copyAssetFolder(final AssetManager assetManager,
-                                          String fromAssetFolderPath,
-                                          final String destinationFolderPath,
-                                          final FileUtil.FileOrDirectoryDeterminer fileOrDirectoryDeterminer) {
-        return copyAssetFolder(assetManager, fromAssetFolderPath, destinationFolderPath,
-                fileOrDirectoryDeterminer, true);
-    }
-
-    public static boolean copyAssetFolder(final AssetManager assetManager,
-                                          String fromAssetFolderPath,
+                                          final String fromAssetFolderPath,
                                           final String destinationFolderPath) {
-        return copyAssetFolder(assetManager, fromAssetFolderPath, destinationFolderPath,
-                new FileUtil.DefaultFileOrDirectoryDeterminer());
+        return copyAssetFolder(assetManager, fromAssetFolderPath,
+                destinationFolderPath, true);
     }
 
     public static String readTextFromAssetsFile(AssetManager assetManager, String fileNamePath) {

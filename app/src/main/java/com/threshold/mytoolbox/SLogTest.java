@@ -9,13 +9,11 @@ import java.util.Arrays;
 @LogTag("SLogTest")
 public class SLogTest {
 
-//    @Keep
-    private static final String TAG = "SLogTest";
+//    private static final String TAG = "SLogTest";
 
     public static final ILog sLog = LoggerFactory.create(LoggerFactory.LOG_STRATEGY_WITH_TRACE, null);
 
     public static void test() {
-        assert sLog != null;
         sLog.d("Hello %s", "word");
         sLog.json("{\"key2\":\"value2\"}");
         sLog.v("ManualTag", null, "This is manual tag");

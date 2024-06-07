@@ -16,7 +16,8 @@ public class SLog {
         throw new IllegalStateException("no instance");
     }
 
-    private static ILog sILog = null;
+    private static ILog sILog = LoggerFactory.create(LoggerFactory.LOG_STRATEGY_DEFAULT,
+            null, 1, new LogcatPrinter());
 
     /**
      * init {@link SLog} with a {@link ILog}
@@ -27,9 +28,6 @@ public class SLog {
      *  @see  LoggerFactory#create(int, String, int, Printer)
      */
     public static void init(@NonNull ILog iLog) {
-        if (sILog != null) {
-            throw new IllegalStateException("SLog is already initialized.");
-        }
         sILog = iLog;
     }
 
@@ -39,9 +37,6 @@ public class SLog {
      * @param printer the printer which to print log
      */
     public static void init(@NonNull Printer printer) {
-        if (sILog != null) {
-            throw new IllegalStateException("SLog is already initialized.");
-        }
         final ILog iLog = LoggerFactory.create(LoggerFactory.LOG_STRATEGY_WITH_TRACE,
                 null, 1, printer);
         init(iLog);

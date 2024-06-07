@@ -2,10 +2,9 @@ package com.threshold.jni;
 
 import android.support.annotation.Keep;
 import android.support.annotation.Nullable;
-import android.util.Log;
 
 import com.threshold.toolbox.log.LogTag;
-import com.threshold.toolbox.log.llog.LLog;
+import com.threshold.toolbox.log.SLog;
 
 @LogTag("MsgQJni")
 public class MsgQueueHandlerJni {
@@ -29,12 +28,12 @@ public class MsgQueueHandlerJni {
             if (0 != (ret = MsgQueueHandlerJni.init(mHandleHolder, handlerParam))) {
                 throw new IllegalArgumentException("invalid param of MsgQueueHandlerJni.init: " + ret);
             }
-            LLog.i("succeed create MsgQueueHandlerJni(%d)", mHandleHolder[0]);
+            SLog.i("succeed create MsgQueueHandlerJni(%d)", mHandleHolder[0]);
         }
 
         /**
          * feed msg to queue.
-         *
+         * <p>
          * If you call in multiple threads, you should use locks to protect this method.
          *
          * @param queueData data for feed to queue.
@@ -66,6 +65,7 @@ public class MsgQueueHandlerJni {
 
         /**
          * destroy MsgQueueHandlerJni
+         *
          * @return 0 for success, otherwise fail.
          */
         public int destroy() {
@@ -80,7 +80,7 @@ public class MsgQueueHandlerJni {
         @Override
         protected void finalize() throws Throwable {
             if (0 != mHandleHolder[0]) {
-                LLog.e("you forgot to destroy MsgQueueHandlerJni(%d). " +
+                SLog.e("you forgot to destroy MsgQueueHandlerJni(%d). " +
                         "now try destroy it for you", mHandleHolder[0]);
                 destroy(); // <-- final option: for prevent mem leak
             }
@@ -96,20 +96,25 @@ public class MsgQueueHandlerJni {
         public int what;
         public int arg1;
         public int arg2;
-        public byte[] obj;
+        public byte[] obj = null;
         public int objLen;
 
         public MsgQueueData(final int what, final int arg1, final int arg2,
-                            final byte[] obj, final int objLen) {
+                            final int objLen) {
             this.what = what;
             this.arg1 = arg1;
             this.arg2 = arg2;
-            this.obj = obj;
             this.objLen = objLen;
+            if (this.objLen < 0) {
+                throw new IllegalArgumentException("must provide valid objLen");
+            }
+            if (this.objLen > 0) {
+                this.obj = new byte[this.objLen];
+            }
         }
 
-        public MsgQueueData(final int what, final int arg1, final int arg2){
-            this(what, arg1, arg2, null, 0);
+        public MsgQueueData(final int what, final int arg1, final int arg2) {
+            this(what, arg1, arg2, 0);
         }
     }
 
@@ -121,9 +126,9 @@ public class MsgQueueHandlerJni {
 
         /**
          * handle each received msg.
-         *
+         * <p>
          * notice: The msg obj is reusable, so DO NOT run around the world with it.
-         *         If necessary, please copy it by yourself.
+         * If necessary, please copy it by yourself.
          */
         int handleMsg(int what, int arg1, int arg2, @Nullable byte[] obj, int objLen);
 
@@ -141,15 +146,20 @@ public class MsgQueueHandlerJni {
         private final String callbackFunction = "handleEvent";
         private final OnReceiveMsgListener listener;
 
-        /** create msg queue handler
-         * @param bufSize msg queue total mem size.
+        /**
+         * create msg queue handler
+         *
+         * @param bufSize  msg queue total mem size.
          * @param listener handle each msg in queue.
          */
         public MsgQueueHandlerParam(final int bufSize, OnReceiveMsgListener listener) {
             if (bufSize < 4096) {
-                LLog.w("maybe bufSize(%d) is too small, " +
+                SLog.w("maybe bufSize(%d) is too small, " +
                         "if you feed large msg, maybe you will failed of feedMsg " +
                         "on first time, that is horrible. consider increase the bufSize.", bufSize);
+            }
+            if (null == listener) {
+                throw new IllegalArgumentException("must provide valid listener!");
             }
             this.bufSize = bufSize;
             this.listener = listener;
@@ -158,7 +168,7 @@ public class MsgQueueHandlerJni {
         // handle jni callback. do NOT delete or obfuscure it!
         @Keep
         public int handleEvent(int what, int arg1, int arg2, byte[] obj, int objLen) {
-//            LLog.i("received event. what=%d, arg1=%d, arg2=%d, obj_len=%d",
+//            SLog.i("received event. what=%d, arg1=%d, arg2=%d, obj_len=%d",
 //                    what, arg1, arg2, objLen);
             return listener.handleMsg(what, arg1, arg2, obj, objLen);
         }
@@ -169,7 +179,7 @@ public class MsgQueueHandlerJni {
      * init msg queue
      *
      * @param handleHolder handle holder
-     * @param initParam     init params
+     * @param initParam    init params
      * @return 0 for succeed, otherwise fail
      */
     private static native int init(long[] handleHolder, MsgQueueHandlerParam initParam);
@@ -186,7 +196,7 @@ public class MsgQueueHandlerJni {
      * @return 0 for succeed, otherwise fail
      */
     private static native int feedMsg(long handle, int what,
-                                     int arg1, int arg2, byte[] obj, int objLen);
+                                      int arg1, int arg2, byte[] obj, int objLen);
 
     /**
      * destroy msg queue

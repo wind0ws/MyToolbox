@@ -303,9 +303,8 @@ static int handle_queue_msg(queue_msg_t *msg_p, void *user_data) {
     if (context->flag_exit) {
         return 0; // return positive number will break the chain. and it's ok to do that.
     }
-
-    if (NULL ==
-        context->cb_data.env) { // env should succeed get from "MSG_Q_HANDLER_STATUS_STARTED"
+    // env should succeed get from "MSG_Q_HANDLER_STATUS_STARTED"
+    if (NULL == context->cb_data.env) {
         return 1; // we have no options to handle this situation, so we break the chain.
     }
 
