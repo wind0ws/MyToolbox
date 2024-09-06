@@ -14,6 +14,17 @@ public class AssetsUtil {
         throw new IllegalStateException("no instance");
     }
 
+    private static void closeCloseable(Closeable closeable) {
+        if (null == closeable) {
+            return;
+        }
+        try {
+            closeable.close();
+        } catch (Exception e) {
+            Log.e(TAG, "failed on close it", e);
+        }
+    }
+
     public static boolean copyAssetFile(final AssetManager assetManager,
                                         String fromAssetFilePath, String toPath,
                                         final boolean isOverrideIfDestinationFileExists) {
@@ -43,16 +54,8 @@ public class AssetsUtil {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            try {
-                if (out != null) {
-                    out.close();
-                }
-                if (in != null) {
-                    in.close();
-                }
-            } catch (IOException e) {
-                Log.e(TAG, "failed on close in/out stream", e);
-            }
+            closeCloseable(out);
+            closeCloseable(in);
         }
         return false;
     }
@@ -137,13 +140,7 @@ public class AssetsUtil {
         } catch (Exception e) {
             Log.e(TAG, "err on read from \"" + fileNamePath + "\"", e);
         } finally {
-            if (bufReader != null) {
-                try {
-                    bufReader.close();
-                } catch (Exception ex) {
-                    Log.e(TAG, "err on close stream", ex);
-                }
-            }
+            closeCloseable(bufReader);
         }
         Log.w(TAG, "nothing read from \"" + fileNamePath + "\"");
         return "";

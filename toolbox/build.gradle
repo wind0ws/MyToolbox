@@ -1,16 +1,20 @@
-apply plugin: 'com.android.library'
 
-apply plugin: 'kotlin-android'
+plugins {
+    id 'com.android.library'
+    id 'kotlin-android'
+}
 
 android {
     namespace 'com.threshold.toolbox'
-    compileSdkVersion 33
+    compileSdk rootProject.ext.compile_sdk_version
 
     defaultConfig {
-        minSdkVersion 14
-        targetSdkVersion 33
+        minSdkVersion rootProject.ext.min_sdk_version
+        //noinspection OldTargetApi
+        targetSdkVersion rootProject.ext.target_sdk_version
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+        ndkVersion rootProject.ext.ndk_version
         externalNativeBuild {
             cmake {
                 arguments "-DANDROID_PLATFORM=android-19",
@@ -22,8 +26,6 @@ android {
                 cFlags "-g -Wall"
 // -Wreturn-type-c-linkage -Wpointer-arith -ftrapv -fsanitize=undefined-trap -fsanitize-undefined-trap-on-error
                 cppFlags "-frtti -fexceptions -fpermissive -v"
-//                arguments "-DANDROID_STL=gnustl_static", "-DANDROID_TOOLCHAIN=clang", "-DANDROID_PLATFORM=android-21", "-DANDROID_ARM_NEON=TRUE"
-                //-g -Wall -Wpointer-arith -ftrapv -fsanitize=undefined-trap -fsanitize-undefined-trap-on-error
             }
             ndk {
                 abiFilters  'armeabi-v7a', 'arm64-v8a','x86','x86_64'//,'mips','mips64','armeabi',
@@ -61,6 +63,9 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
     packagingOptions {
         jniLibs {
             keepDebugSymbols += ['**/*.so']
@@ -73,7 +78,6 @@ android {
                          'META-INF/NOTICE', 'META-INF/LGPL2.1']
         }
     }
-
     lint {
         abortOnError false
         checkReleaseBuilds false
@@ -84,32 +88,9 @@ android {
 
 }
 
-//打包处理jar（包括Kotlin）,但是没有混淆
-//task makeJar(dependsOn: ['compileReleaseJavaWithJavac'], type: Jar) {
-//    //最终的 Jar 包名，如果没设置，默认为 [baseName]-[appendix]-[version]-[classifier].[extension]
-//    archiveName = "toolbox.jar"
-//    delete 'build/libs/' + archiveName //生成的jar存放路径
-//    appendix = "demo"
-//    baseName = "androidJar"
-//    version = "1.0.0"
-//    classifier = "release"
-//    //后缀名
-//    extension = "jar"
-//
-//    //需打包的资源所在的路径集
-//    def srcClassesDir1 = [project.buildDir.absolutePath + "/tmp/kotlin-classes/release"] //Kotlin 生成的classes文件路径
-//    def srcClassesDir2 = [project.buildDir.absolutePath + "/intermediates/classes/release"] //Java 生成的classes文件路径
-//    //初始化资源路径集
-//    from srcClassesDir1, srcClassesDir2
-//    //去除路径集下部分的资源
-//    exclude "**/R.class"
-//    exclude "**/R\$*.class"
-//    //只导入资源路径集下的部分资源
-//    include "com/iflytek/musicrecognition/**/*.class"
-//}
 
-task testJar(type: Jar) {
-    classifier = 'tests'
+tasks.register('testJar', Jar) {
+//    classifier = 'tests'
 //    from android.sourceSets.test.output
 //    from project.buildDir.absolutePath + "/intermediates/javac/debug/compileDebugJavaWithJavac/classes"
     from project.buildDir.absolutePath + "/intermediates/javac/debugAndroidTest/compileDebugAndroidTestJavaWithJavac/classes"
@@ -118,17 +99,12 @@ task testJar(type: Jar) {
     exclude "**/R\$*.class"
 }
 
-//task testJar(type: Jar) {
-//    baseName = "test-${project.archivesBaseName}"
-//    from android.sourceSets.test.output
-//}
-
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    testImplementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    testImplementation 'junit:junit:4.12'
-    testImplementation 'org.json:json:20180813'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    testImplementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${rootProject.ext.kotlin_version}"
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.json:json:20240303'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
 }

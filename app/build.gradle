@@ -3,7 +3,6 @@ import java.text.SimpleDateFormat
 plugins {
     id 'com.android.application'
     id 'kotlin-android'
-    id 'kotlin-android-extensions'
 }
 
 static def formatDateTime(){
@@ -12,21 +11,22 @@ static def formatDateTime(){
 
 android {
     namespace 'com.threshold.mytoolbox'
+    compileSdk rootProject.ext.compile_sdk_version
 
-    compileSdkVersion 33
     defaultConfig {
         applicationId "com.threshold.mytoolbox"
-        minSdkVersion 19
-        targetSdkVersion 33
+        minSdkVersion rootProject.ext.min_sdk_version
+        //noinspection OldTargetApi
+        targetSdkVersion rootProject.ext.target_sdk_version
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         multiDexEnabled true
+        ndkVersion rootProject.ext.ndk_version
         externalNativeBuild {
             cmake {
-                //如果so库需要使用C++运行环境，需要添加gnustl_static，这个适用于NDK-16b及以下.最新版的NDK不支持，编译报错。只能为应用选择一个运行时
-//                "-DANDROID_STL=c++_shared"
-//                arguments "-DANDROID_STL=c++_static", "-DANDROID_PLATFORM=android-19", "-DANDROID_TOOLCHAIN=clang", "-DANDROID_ARM_NEON=TRUE"
+                //如果so库需要使用C++运行环境, 可以添加gnustl_static，这个适用于NDK-16b及以下.最新版的NDK不支持，编译报错。只能为应用选择一个运行时
+                arguments "-DANDROID_STL=c++_static", "-DANDROID_PLATFORM=android-19", "-DANDROID_TOOLCHAIN=clang", "-DANDROID_ARM_NEON=TRUE"
                 cFlags "-g -Wall"
                 cppFlags "-frtti -fexceptions -v"
             }
@@ -65,12 +65,23 @@ android {
             path "CMakeLists.txt"
         }
     }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
     packagingOptions {
         jniLibs {
             keepDebugSymbols += ['**/*.so']
         }
         resources {
-            excludes += ['META-INF/services/javax.annotation.processing.Processor', 'META-INF/DEPENDENCIES.txt', 'META-INF/DEPENDENCIES', 'META-INF/MANIFEST.MF', 'META-INF/LICENSE.txt', 'META-INF/LICENSE', 'META-INF/NOTICE.txt', 'META-INF/ASL2.0', 'META-INF/NOTICE', 'META-INF/LGPL2.1']
+            excludes += ['META-INF/services/javax.annotation.processing.Processor',
+                         'META-INF/DEPENDENCIES.txt', 'META-INF/DEPENDENCIES',
+                         'META-INF/MANIFEST.MF', 'META-INF/LICENSE.txt', 'META-INF/LICENSE',
+                         'META-INF/NOTICE.txt', 'META-INF/ASL2.0',
+                         'META-INF/NOTICE', 'META-INF/LGPL2.1']
         }
     }
     lint {
@@ -81,8 +92,8 @@ android {
         quiet true
     }
 
-    applicationVariants.all { variant ->
-        variant.outputs.all { output ->
+    applicationVariants.configureEach { variant ->
+        variant.outputs.configureEach { output ->
             if (variant.buildType.name == "debug") {
                 outputFileName = "MyToolBox_${variant.buildType.name}.apk"
             } else {
@@ -95,12 +106,12 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation"org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    testImplementation 'junit:junit:4.12'
-    testImplementation 'org.json:json:20180813'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${rootProject.ext.kotlin_version}"
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.json:json:20240303'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
     implementation project(':toolbox')
     //for call public hidden api purpose.
 //    compileOnly files("libs/android-19.jar")

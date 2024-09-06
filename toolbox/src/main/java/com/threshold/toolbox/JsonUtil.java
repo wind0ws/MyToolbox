@@ -40,7 +40,7 @@ public class JsonUtil {
     }
 
     @Nullable
-    public static Object opt(final String json, final String key) {
+    public static Object opt(@NonNull final String json, @NonNull final String key) {
         if (TextUtils.isEmpty(json) || "{}".equals(json.trim().replace(" ", ""))) {
             return null;
         }
@@ -53,7 +53,8 @@ public class JsonUtil {
         return null;
     }
 
-    public static String optString(final String json, final String key, final String defaultVal) {
+    public static String optString(@NonNull final String json, @NonNull final String key,
+                                   @NonNull final String defaultVal) {
         try {
             return optString(new JSONObject(json), key, defaultVal);
         } catch (JSONException e) {
@@ -62,8 +63,8 @@ public class JsonUtil {
         return defaultVal;
     }
 
-    public static String optString(final JSONObject jsonObject,
-                                   final String key, final String defaultVal) {
+    public static String optString(@NonNull final JSONObject jsonObject,
+                                   @NonNull final String key, @NonNull final String defaultVal) {
         final Object obj = opt(jsonObject, key);
         if (obj != null) {
             return obj.toString();
@@ -71,13 +72,13 @@ public class JsonUtil {
         return defaultVal;
     }
 
-    public static boolean optBoolean(final String json, final String key) {
+    public static boolean optBoolean(@NonNull final String json, @NonNull final String key) {
         final String obj = optString(json, key, "");
         return obj != null && "true".equalsIgnoreCase(obj.trim());
     }
 
-    public static int optInt(final JSONObject jsonObject,
-                             final String key, final int defaultVal) {
+    public static int optInt(@NonNull final JSONObject jsonObject,
+                             @NonNull final String key, @NonNull final int defaultVal) {
         final String numStr = optString(jsonObject, key, "");
         int ret = defaultVal;
         if (TextUtils.isEmpty(numStr)) {

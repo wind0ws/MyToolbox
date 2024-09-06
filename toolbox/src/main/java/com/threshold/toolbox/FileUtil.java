@@ -1,10 +1,14 @@
 package com.threshold.toolbox;
 
+import android.os.Build;
+
 import java.io.*;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/** @noinspection IOStreamConstructor*/
 @SuppressWarnings("unused")
 public class FileUtil {
 
@@ -108,6 +112,15 @@ public class FileUtil {
         return isExists(path, S_DEL_DIR_INTERCEPTOR);
     }
 
+    public static boolean isSymlink(File file) throws IOException {
+        if (file == null) {
+            throw new NullPointerException("File must not be null");
+        }
+        File canonicalFile = file.getCanonicalFile();
+        File absoluteFile = file.getAbsoluteFile();
+        return !canonicalFile.equals(absoluteFile);
+    }
+
     private interface FileInterceptor{
         void handleFile(File file);
     }
@@ -119,7 +132,7 @@ public class FileUtil {
                 return;
             }
             if (!file.delete()) {
-                System.out.printf("can't delete file => %s\n", file);
+                System.out.printf("can't delete dir => %s\n", file);
             }
         }
     }
@@ -130,24 +143,40 @@ public class FileUtil {
             if (file.isDirectory()) {
                 return;
             }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (Files.isSymbolicLink(file.toPath())) {
+                    return;
+                }
+            } else {
+                try {
+                    if (isSymlink(file)) {
+                        return;
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
             if (!file.delete()) {
-                System.out.printf("can't delete dir => %s\n", file);
+                System.out.printf("can't delete file => %s\n", file);
             }
         }
     }
 
     private static boolean isExists(final String path, final FileInterceptor fileInterceptor) {
-        if (TextUtil.isEmpty(path)) {
+        if (null == path || TextUtil.isEmpty(path)) {
             return false;
         }
+        if (null == fileInterceptor) {
+            return new File(path).exists();
+        }
         final String[] paths = path.split(File.separator);
-        final StringBuilder current = new StringBuilder(128);
+        final StringBuilder currentPathBuilder = new StringBuilder(256);
         for (final String onePath : paths) {
             if (TextUtil.isEmpty(onePath)) {
                 continue;
             }
-            current.append(File.separator).append(onePath);
-            final String currentPath = current.toString();
+            currentPathBuilder.append(File.separator).append(onePath);
+            final String currentPath = currentPathBuilder.toString();
             final File currentFile = new File(currentPath);
             if (currentFile.exists()) {
                 fileInterceptor.handleFile(currentFile);

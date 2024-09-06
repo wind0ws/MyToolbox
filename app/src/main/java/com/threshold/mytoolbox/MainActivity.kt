@@ -6,9 +6,9 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.Gravity
+import com.threshold.mytoolbox.databinding.ActivityMainBinding
 import com.threshold.permissions.PermissionController
 import com.threshold.permissions.SystemSettingUtils
-import kotlinx.android.synthetic.main.activity_main.*
 import com.threshold.toolbox.ToastUtil
 import com.threshold.toolbox.log.LogTag
 import com.threshold.toolbox.log.SLog
@@ -19,23 +19,25 @@ class MainActivity : AppCompatActivity(), PermissionController.OnPermissionChang
 //    companion object{
 //        @Keep
 //        @JvmStatic
-//        val TAG = "MainActivity"
+//        val TAG = "MainAct"
 //    }
 
     private val mHandler = Handler(Looper.myLooper()!!)
     private var mToastTimes = 0
     private val mPermissionController = PermissionController(this)
+    private lateinit var mMainViewBinding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 //        DensityUtil.setupDensity(application, this)
-        setContentView(R.layout.activity_main)
+        mMainViewBinding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(mMainViewBinding.root)
+//        setContentView(R.layout.activity_main)
 
         // now request permission from user
         mPermissionController.init(this)
 
-
-        tv1.text = applicationInfo.nativeLibraryDir
+        mMainViewBinding.tv1.text = applicationInfo.nativeLibraryDir
         SLog.i("nativeLibraryDir=${applicationInfo.nativeLibraryDir}")
 
         val sharedLibraryFiles = applicationInfo.sharedLibraryFiles
@@ -46,7 +48,7 @@ class MainActivity : AppCompatActivity(), PermissionController.OnPermissionChang
         }
 
         // Example of a call to a native method
-//        sample_text.text = NativeLibJni().stringFromJNI()
+//        mMainViewBinding.sample_text.text = NativeLibJni().stringFromJNI()
 
 //        testHiddenPublicApi()
         testToast()
@@ -75,7 +77,8 @@ class MainActivity : AppCompatActivity(), PermissionController.OnPermissionChang
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
-        grantResults: IntArray) {
+        grantResults: IntArray
+    ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         // let controller handle it
         mPermissionController.resolveRequestPermissionsResult(
@@ -91,7 +94,7 @@ class MainActivity : AppCompatActivity(), PermissionController.OnPermissionChang
     }
 
     override fun onSomePermissionPermanentlyDenied() {
-        ToastUtil.showLong(this, R.string.tip_no_permission_exit)
+        ToastUtil.showLong(this, com.threshold.toolbox.R.string.tip_no_permission_exit)
         SystemSettingUtils.toPermissionSetting(this)
         finish()
     }

@@ -28,9 +28,8 @@
 -ignorewarnings                                     # 屏蔽警告
 -verbose                                            # 混淆时记录日志
 -optimizations !code/simplification/arithmetic,!field/*,!class/merging/*    #优化
--keepattributes *Annotation*                        # 保护代码中的Annotation不被混淆
--keepattributes Signature                           # 避免混淆泛型, 这在JSON实体映射时非常重要
--keepattributes SourceFile,LineNumberTable          # 抛出异常时保留代码行号
+-keepattributes *Annotation*, InnerClasses, EnclosingMethod, Signature, Exceptions, SourceFile, LineNumberTable, LocalVariableTable, LocalVariableTypeTable
+
 #代码优化选项，不加该行会将没有用到的类删除
 -dontshrink
 -obfuscationdictionary dictionary_rules.txt

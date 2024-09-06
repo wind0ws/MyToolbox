@@ -25,7 +25,7 @@
 *.py            text eol=lf
 *.java          text eol=lf
 *.aidl          text eol=lf
-*.kt            text eol=lf  
+*.kt            text eol=lf
 
 
 # build scripts and such
@@ -38,7 +38,7 @@ Makefile        text eol=lf
 Makefile.win    text eol=lf
 configure       text eol=lf
 *.bat           text eol=crlf
-*.cmd           text eol=crlf 
+*.cmd           text eol=crlf
 
 # Declare files that will always have CRLF line endings on checkout.
 # Xcode
@@ -62,5 +62,21 @@ configure       text eol=lf
 # Denote all files that are truly binary and should not be modified.
 *.png binary
 *.jpg binary
+*.jpeg binary
+*.gif binary
 *.bmp binary
 *.pdf binary
+*.ico binary  
+*.exe binary 
+*.lib binary
+*.dll binary
+*.so binary  
+*.dylib binary  
+*.a binary
+*.o binary  
+*.obj binary
+*.wav binary
+*.mp3 binary
+*.pcm binary 
+# Keep JSON, do not modified 
+*.json binary
