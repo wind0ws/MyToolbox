@@ -1,7 +1,10 @@
 package com.threshold.toolbox.log;
 
+import com.threshold.toolbox.TextUtil;
+
 import java.lang.reflect.Field;
 
+/** @noinspection CallToPrintStackTrace*/
 public class TagFinder {
 
     private TagFinder() {
@@ -36,13 +39,14 @@ public class TagFinder {
     }
 
     private static String searchTagAnnotationInClass(final Class<?> targetClz) {
-        if (targetClz.isAnnotationPresent(LogTag.class)) {
-            try {
-                final LogTag logTagAnnotation = targetClz.getAnnotation(LogTag.class);
-                return null == logTagAnnotation ? "" : logTagAnnotation.value();
-            } catch (Exception e) {
-                //ignore
-            }
+        if (!targetClz.isAnnotationPresent(LogTag.class)) {
+            return "";
+        }
+        try {
+            final LogTag logTagAnnotation = targetClz.getAnnotation(LogTag.class);
+            return null == logTagAnnotation ? "" : logTagAnnotation.value();
+        } catch (Exception e) {
+            //ignore
         }
         return "";
     }
@@ -57,7 +61,7 @@ public class TagFinder {
         try {
             final Class<?> targetClz = Class.forName(className);
             String tag = searchTagAnnotationInClass(targetClz);
-            if ("".equals(tag)) {
+            if (TextUtil.isEmpty(tag)) {
                 tag = searchTagFiledInClass(targetClz);
             }
             return tag;

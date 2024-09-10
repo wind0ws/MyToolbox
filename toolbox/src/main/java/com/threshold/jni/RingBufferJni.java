@@ -1,6 +1,6 @@
 package com.threshold.jni;
 
-public class ToolboxJni {
+public class RingBufferJni {
 
     static {
         System.loadLibrary("toolbox");
@@ -16,7 +16,7 @@ public class ToolboxJni {
      * @param buffer_size   buffer size you want to create
      * @return 0 for success
      */
-    public static native int rbufCreate(long[] handle_holder, int buffer_size);
+    public static native int create(long[] handle_holder, int buffer_size);
 
     /**
      * available read data len from ring
@@ -25,7 +25,7 @@ public class ToolboxJni {
      * @param data_len_holder int array for receive data len
      * @return 0 for success
      */
-    public static native int rbufAvailableRead(long handle, int[] data_len_holder);
+    public static native int availableRead(long handle, int[] data_len_holder);
 
     /**
      * available write len to ring. (free space to write)
@@ -34,7 +34,7 @@ public class ToolboxJni {
      * @param data_len_holder int array for receive free space
      * @return 0 for success
      */
-    public static native int rbufAvailableWrite(long handle, int[] data_len_holder);
+    public static native int availableWrite(long handle, int[] data_len_holder);
 
     /**
      * discard specified len data from ring buffer.
@@ -44,7 +44,7 @@ public class ToolboxJni {
      * @param len    how long that you want to discard
      * @return real discard len
      */
-    public static native int rbufDiscard(long handle, int len);
+    public static native int discard(long handle, int len);
 
     /**
      * peek data from ring buffer
@@ -56,7 +56,7 @@ public class ToolboxJni {
      * @param len    how long you want to copy to data
      * @return real peek data len
      */
-    public static native int rbufPeek(long handle, byte[] data, int offset, int len);
+    public static native int peek(long handle, byte[] data, int offset, int len);
 
     /**
      * read specified len byte from ring buffer and copy it to data from offset
@@ -67,7 +67,7 @@ public class ToolboxJni {
      * @param len    how long you want to copy to data
      * @return real read len
      */
-    public static native int rbufRead(long handle, byte[] data, int offset, int len);
+    public static native int read(long handle, byte[] data, int offset, int len);
 
     /**
      * write specified len byte from data's offset to ring buffer
@@ -78,7 +78,7 @@ public class ToolboxJni {
      * @param len    how long you want write to ring buffer
      * @return real write len
      */
-    public static native int rbufWrite(long handle, byte[] data, int offset, int len);
+    public static native int write(long handle, byte[] data, int offset, int len);
 
     /**
      * clear all data, NOT THREAD SAFE
@@ -87,7 +87,7 @@ public class ToolboxJni {
      * @param handle handle
      * @return 0
      */
-    public static native int rbufClear(long handle);
+    public static native int clear(long handle);
 
     /**
      * destroy the ring buffer
@@ -95,7 +95,7 @@ public class ToolboxJni {
      * @param handle_holder handle
      * @return 0 for success
      */
-    public static native int rbufDestroy(long[] handle_holder);
+    public static native int destroy(long[] handle_holder);
 
 
     //========================== Ring buffer end ==========================

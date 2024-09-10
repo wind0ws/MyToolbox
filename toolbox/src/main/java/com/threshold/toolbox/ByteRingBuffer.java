@@ -1,7 +1,7 @@
 package com.threshold.toolbox;
 
 /**
- * @deprecated not thread safe, suggest use @see RingBuffer
+ * @deprecated not thread safe, suggest use {@link RingBuffer}
  *
  * A ring buffer (circular buffer, FIFO) for bytes.
  *

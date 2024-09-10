@@ -6,6 +6,7 @@ import android.util.Log;
 import java.io.*;
 import java.util.regex.Pattern;
 
+/** @noinspection IOStreamConstructor, CallToPrintStackTrace */
 public class AssetsUtil {
 
     private static final String TAG = "AssetsUtil";
@@ -26,7 +27,8 @@ public class AssetsUtil {
     }
 
     public static boolean copyAssetFile(final AssetManager assetManager,
-                                        String fromAssetFilePath, String toPath,
+                                        final String fromAssetFilePath,
+                                        final String toPath,
                                         final boolean isOverrideIfDestinationFileExists) {
         InputStream in = null;
         OutputStream out = null;
@@ -75,7 +77,7 @@ public class AssetsUtil {
      * @return true if all copy task execute successfully
      */
     public static boolean copyAssetFolder(final AssetManager assetManager,
-                                          String fromAssetFolderPath,
+                                          final String fromAssetFolderPath,
                                           final String destinationFolderPath,
                                           final boolean isOverrideIfDestinationFileExists) {
         try {

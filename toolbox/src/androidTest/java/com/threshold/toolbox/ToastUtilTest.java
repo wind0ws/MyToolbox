@@ -13,7 +13,7 @@ public class ToastUtilTest {
     @Test
     public void testToast() {
         // Context of the app under test.
-        Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        final Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         for (int i = 0; i < 10; i++) {
             if (i < 5) {
                 ToastUtil.showShort(appContext, "Show " + i);

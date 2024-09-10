@@ -2,7 +2,7 @@ package com.threshold.toolbox;
 
 public class HexUtil {
 
-    private HexUtil(){
+    private HexUtil() {
         throw new IllegalStateException("no instance");
     }
 
@@ -17,17 +17,17 @@ public class HexUtil {
         if (null == src || 0 == src.length || null == delimiter) {
             throw new IllegalArgumentException("bad argument \"src\". It should be not empty.");
         }
-        boolean shouldAppendDelimiter = !TextUtil.isEmpty(delimiter);
+        final boolean shouldAppendDelimiter = !TextUtil.isEmpty(delimiter);
         final StringBuilder sb = new StringBuilder(src.length * (2 + delimiter.length()));
         for (byte aByte : src) {
-            String strHex = Integer.toHexString(aByte & 0xFF);
+            final String strHex = Integer.toHexString(aByte & 0xFF);
             // 每个字节由两个字符表示，位数不够，高位补0
             sb.append((strHex.length() == 1) ? "0" + strHex : strHex);
             if (shouldAppendDelimiter) {
                 sb.append(delimiter);
             }
         }
-        //remove last redundancy delimiter
+        // remove last redundancy delimiter
         if (shouldAppendDelimiter) {
             sb.delete(sb.length() - delimiter.length(), sb.length());
         }
@@ -35,7 +35,7 @@ public class HexUtil {
     }
 
     /**
-     * 字符串转成字节数组
+     * 连续的16进制字符串转成字节数组
      */
     public static byte[] decode(String src) {
         int m, n;
@@ -44,17 +44,17 @@ public class HexUtil {
         for (int i = 0; i < byteLen; i++) {
             m = i * 2 + 1;
             n = m + 1;
-            int intVal = Integer.decode("0x" + src.substring(i * 2, m) + src.substring(m, n));
+            final int intVal = Integer.decode("0x" + src.substring(i * 2, m) + src.substring(m, n));
             ret[i] = (byte) intVal;
         }
         return ret;
     }
 
     public static byte[] decode(String src, String delimiter) {
-        if (null == src || src.length() < 2 || null == delimiter) {
-            throw new IllegalArgumentException("bad argument \"src\". It length should bigger than 2");
+        if (null == src || src.length() < 2) {
+            throw new IllegalArgumentException("bad argument \"src\". It length shouldn't smaller than 2");
         }
-        boolean hasDelimiter = !TextUtil.isEmpty(delimiter);
+        final boolean hasDelimiter = !TextUtil.isEmpty(delimiter);
         if (hasDelimiter) {
             src = src.replace(delimiter, "");
         }

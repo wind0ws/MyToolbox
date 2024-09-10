@@ -8,6 +8,8 @@ import android.text.TextUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import com.threshold.toolbox.TextUtil;
 import com.threshold.toolbox.log.*;
 
 import java.util.Collection;
@@ -337,7 +339,7 @@ class StackTraceLogger implements StackTraceLog,Printer {
             // no source. maybe minifyEnabled, now we try to search TAG filed in class
             final String tagFoundFromCache = mTagFinderCache.findTag(className);
             // if tag cache is "", it represent that we searched TAG before, but no TAG found in class.
-            if (!"".equals(tagFoundFromCache)) {
+            if (!TextUtil.isEmpty(tagFoundFromCache)) {
                 tag = tagFoundFromCache;
             }
         }

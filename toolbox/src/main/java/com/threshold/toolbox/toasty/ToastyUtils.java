@@ -51,7 +51,8 @@ final class ToastyUtils {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
             view.setBackground(drawable);
         } else {
-            view.setBackgroundDrawable(drawable);
+            //view.setBackgroundDrawable(drawable);
+            view.setBackground(drawable);
         }
     }
 

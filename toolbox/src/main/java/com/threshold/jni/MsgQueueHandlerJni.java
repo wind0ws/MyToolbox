@@ -6,6 +6,9 @@ import androidx.annotation.Nullable;
 import com.threshold.toolbox.log.LogTag;
 import com.threshold.toolbox.log.SLog;
 
+import java.io.Closeable;
+import java.io.IOException;
+
 @LogTag("MsgQJni")
 public class MsgQueueHandlerJni {
 
@@ -16,7 +19,7 @@ public class MsgQueueHandlerJni {
     /**
      * Helper for operate with MsgQueueHandlerJni
      */
-    public static class Helper {
+    public static class Helper implements Closeable {
         public static final int CODE_SUCCESS = 0;
         public static final int CODE_GENERAL_FAIL = 1;
         public static final int CODE_ERROR_FULL = 5;
@@ -63,18 +66,16 @@ public class MsgQueueHandlerJni {
                     queueData.arg1, queueData.arg2, queueData.obj, queueData.objLen);
         }
 
-        /**
-         * destroy MsgQueueHandlerJni
-         *
-         * @return 0 for success, otherwise fail.
-         */
-        public int destroy() {
+        @Override
+        public void close() {
             if (0 == mHandleHolder[0]) {
-                return 0;
+                return;
             }
-            int ret = MsgQueueHandlerJni.destroy(mHandleHolder);
+            final int ret = MsgQueueHandlerJni.destroy(mHandleHolder);
             mHandleHolder[0] = 0;
-            return ret;
+            if (0 != ret) {
+                SLog.e("failed(%d) on destroy MsgQueueHandlerJni", ret);
+            }
         }
 
         @Override
@@ -82,10 +83,11 @@ public class MsgQueueHandlerJni {
             if (0 != mHandleHolder[0]) {
                 SLog.e("you forgot to destroy MsgQueueHandlerJni(%d). " +
                         "now try destroy it for you", mHandleHolder[0]);
-                destroy(); // <-- final option: for prevent mem leak
+                close(); // <-- final option: for prevent mem leak
             }
             super.finalize();
         }
+
     }
 
 
@@ -137,10 +139,11 @@ public class MsgQueueHandlerJni {
     @Keep
     @SuppressWarnings("all")
     public static class MsgQueueHandlerParam {
-        // version that communicate with java jni class.
-        // this should as same as JNI_PROTOCOL_VER in jni_msg_queue_handler.c
+        // version that communicate with jni.
+        //   this should as same as JNI_PROTOCOL_VER in jni_msg_queue_handler.c
         private static final int JNI_PROTOCOL_VER = 0;
 
+        // jni will read this variable.
         private int protocolVer = JNI_PROTOCOL_VER;
         private int bufSize = 8192;
         private final String callbackFunction = "handleEvent";
@@ -174,6 +177,7 @@ public class MsgQueueHandlerJni {
         }
     }
 
+    //========================== MsgQueueHandler JNI start ==========================
 
     /**
      * init msg queue
@@ -205,5 +209,7 @@ public class MsgQueueHandlerJni {
      * @return 0 for succeed, otherwise fail
      */
     private static native int destroy(long[] handleHolder);
+
+    //========================== MsgQueueHandler JNI end ==========================
 
 }

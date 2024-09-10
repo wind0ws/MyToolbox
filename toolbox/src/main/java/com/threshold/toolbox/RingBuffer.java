@@ -1,6 +1,8 @@
 package com.threshold.toolbox;
 
-import com.threshold.jni.ToolboxJni;
+import android.util.Log;
+
+import com.threshold.jni.RingBufferJni;
 
 import java.io.Closeable;
 
@@ -12,12 +14,12 @@ import java.io.Closeable;
  */
 public class RingBuffer implements Closeable {
 
-    // store ring buffer native handle: why use long, for compat with 64bit OS
+    // store ring buffer native handle. why use long: for compat with 64bit OS
     private final long[] mNativeHandle = new long[]{0};
     // store ring buffer can read data len
-    private final int[] mReceiveDataLen = new int[]{0};
+    private final int[] mReceiveAvailableReadLen = new int[]{0};
     // store ring buffer can write data len
-    private final int[] mReceiveFreeSpace = new int[]{0};
+    private final int[] mReceiveAvailableWriteLen = new int[]{0};
 
     /**
      * init ring buffer with size
@@ -28,10 +30,10 @@ public class RingBuffer implements Closeable {
         if (bufferSize < 2) {
             throw new IllegalArgumentException(String.format("illegal bufferSize(%d)", bufferSize));
         }
-        int ret = ToolboxJni.rbufCreate(mNativeHandle, bufferSize);
+        int ret = RingBufferJni.create(mNativeHandle, bufferSize);
         if (0 != ret || 0 == mNativeHandle[0]) {
             throw new IllegalArgumentException(
-                    String.format("failed on create ring buffer. bufferSize=%d", bufferSize));
+                    String.format("failed on create ring buffer jni. bufferSize=%d", bufferSize));
         }
     }
 
@@ -40,8 +42,8 @@ public class RingBuffer implements Closeable {
      * @return ring used len in bytes
      */
     public int availableReadLen() {
-        ToolboxJni.rbufAvailableRead(mNativeHandle[0], mReceiveDataLen);
-        return mReceiveDataLen[0];
+        RingBufferJni.availableRead(mNativeHandle[0], mReceiveAvailableReadLen);
+        return mReceiveAvailableReadLen[0];
     }
 
     /**
@@ -49,8 +51,8 @@ public class RingBuffer implements Closeable {
      * @return ring free space len in bytes
      */
     public int availableWriteLen() {
-        ToolboxJni.rbufAvailableWrite(mNativeHandle[0], mReceiveFreeSpace);
-        return mReceiveFreeSpace[0];
+        RingBufferJni.availableWrite(mNativeHandle[0], mReceiveAvailableWriteLen);
+        return mReceiveAvailableWriteLen[0];
     }
 
     /**
@@ -77,7 +79,7 @@ public class RingBuffer implements Closeable {
      * @return real write data len
      */
     public int write(final byte[] data, int offset, int len) {
-        return ToolboxJni.rbufWrite(mNativeHandle[0], data, offset, len);
+        return RingBufferJni.write(mNativeHandle[0], data, offset, len);
     }
 
     public int write(final byte[] data) {
@@ -92,7 +94,7 @@ public class RingBuffer implements Closeable {
      * @return real read out data len
      */
     public int read(final byte[] buffer, int offset, int len) {
-        return ToolboxJni.rbufRead(mNativeHandle[0], buffer, offset, len);
+        return RingBufferJni.read(mNativeHandle[0], buffer, offset, len);
     }
 
     public int read(final byte[] buffer) {
@@ -106,7 +108,7 @@ public class RingBuffer implements Closeable {
      * @return real discard len
      */
     public int discard(int len) {
-        return ToolboxJni.rbufDiscard(mNativeHandle[0], len);
+        return RingBufferJni.discard(mNativeHandle[0], len);
     }
 
     /**
@@ -118,7 +120,7 @@ public class RingBuffer implements Closeable {
      * @return real peek len
      */
     public int peek(final byte[] buffer, int offset, int len) {
-        return ToolboxJni.rbufPeek(mNativeHandle[0], buffer, offset, len);
+        return RingBufferJni.peek(mNativeHandle[0], buffer, offset, len);
     }
 
     public int peek(final byte[] buffer) {
@@ -130,7 +132,7 @@ public class RingBuffer implements Closeable {
      * <p> call this method you should ensure ring not in read/write state! </p>
      */
     public void clear() {
-        ToolboxJni.rbufClear(mNativeHandle[0]);
+        RingBufferJni.clear(mNativeHandle[0]);
     }
 
     /**
@@ -140,7 +142,7 @@ public class RingBuffer implements Closeable {
     @Override
     public void close() {
         if (0 != mNativeHandle[0]) {
-            ToolboxJni.rbufDestroy(mNativeHandle);
+            RingBufferJni.destroy(mNativeHandle);
             mNativeHandle[0] = 0;
         }
     }

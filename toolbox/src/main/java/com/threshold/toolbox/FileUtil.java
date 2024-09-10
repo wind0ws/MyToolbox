@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** @noinspection IOStreamConstructor*/
+/** @noinspection IOStreamConstructor, CallToPrintStackTrace */
 @SuppressWarnings("unused")
 public class FileUtil {
 
@@ -81,6 +81,9 @@ public class FileUtil {
         }
         if (file.isDirectory()) {
             final File[] files = file.listFiles();
+            if (null == files) {
+                return;
+            }
             for (final File f : files) {
                 deleteFile(f);
             }
@@ -112,13 +115,22 @@ public class FileUtil {
         return isExists(path, S_DEL_DIR_INTERCEPTOR);
     }
 
-    public static boolean isSymlink(File file) throws IOException {
-        if (file == null) {
+    public static boolean isSymbolicLink(File file)  {
+        if (null == file) {
             throw new NullPointerException("File must not be null");
         }
-        File canonicalFile = file.getCanonicalFile();
-        File absoluteFile = file.getAbsoluteFile();
-        return !canonicalFile.equals(absoluteFile);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            return Files.isSymbolicLink(file.toPath());
+        }
+
+        try {
+            final File canonicalFile = file.getCanonicalFile();
+            final File absoluteFile = file.getAbsoluteFile();
+            return !canonicalFile.equals(absoluteFile);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        return false;
     }
 
     private interface FileInterceptor{
@@ -128,11 +140,15 @@ public class FileUtil {
     private static class DelFileInterceptor implements FileInterceptor {
         @Override
         public void handleFile(final File file) {
+            // skip SymbolicLink
+            if (isSymbolicLink(file)) {
+                return;
+            }
             if (file.isFile()) {
                 return;
             }
             if (!file.delete()) {
-                System.out.printf("can't delete dir => %s\n", file);
+                System.out.printf("DelFileInterceptor: can't delete dir => %s\n", file);
             }
         }
     }
@@ -140,24 +156,15 @@ public class FileUtil {
     private static class DelDirInterceptor implements FileInterceptor {
         @Override
         public void handleFile(final File file) {
+            // skip SymbolicLink
+            if (isSymbolicLink(file)) {
+                return;
+            }
             if (file.isDirectory()) {
                 return;
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                if (Files.isSymbolicLink(file.toPath())) {
-                    return;
-                }
-            } else {
-                try {
-                    if (isSymlink(file)) {
-                        return;
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
             if (!file.delete()) {
-                System.out.printf("can't delete file => %s\n", file);
+                System.out.printf("DelDirInterceptor: can't delete file => %s\n", file);
             }
         }
     }
@@ -226,7 +233,7 @@ public class FileUtil {
             }
             return true;
         } catch (IOException ex) {
-            System.out.printf("error on copy file: %s\n", ex.toString());
+            System.out.printf("error on copy file: %s\n", ex);
             ex.printStackTrace();
             return false;
         }finally {

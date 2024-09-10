@@ -4,7 +4,7 @@ import android.util.SparseArray;
 
 public class TagFinderCache {
 
-    private final SparseArray<String> mTagCache = new SparseArray<>(128);
+    private final SparseArray<String> mTagCache = new SparseArray<>(256);
 
     /**
      * Find tag from class annotation,
@@ -14,13 +14,13 @@ public class TagFinderCache {
      */
     public String findTag(final String className){
         final int tagKey = className.hashCode();
-        String tagFoundFromCache = mTagCache.get(tagKey);
-        if (null == tagFoundFromCache) {
-            final String searchedTag = TagFinder.searchTagInClass(className);
-            mTagCache.put(tagKey, searchedTag);
-            tagFoundFromCache = searchedTag;
+        final String tagFoundFromCache = mTagCache.get(tagKey);
+        if (null != tagFoundFromCache) {
+            return tagFoundFromCache;
         }
-        return tagFoundFromCache;
+        final String searchedTag = TagFinder.searchTagInClass(className);
+        mTagCache.put(tagKey, searchedTag);
+        return searchedTag;
     }
 
 }

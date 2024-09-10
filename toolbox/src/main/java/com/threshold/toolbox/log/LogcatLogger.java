@@ -54,7 +54,7 @@ public class LogcatLogger extends AbsLogger {
     protected ILog logObj(final int methodOffset, final String tag, final Object object) {
         if (mLogPrinter.isPrintable(LOG_PRIORITY_DEBUG, tag)) {
             mLogPrinter.print(LOG_PRIORITY_DEBUG, tag,
-                    String.format("object=>%s", object == null ? "null" : object.toString()));
+                    String.format("object => %s", object == null ? "null" : object.toString()));
         }
         return this;
     }
@@ -64,7 +64,7 @@ public class LogcatLogger extends AbsLogger {
     protected ILog logJson(final int methodOffset, final String tag, final String json) {
         if (mLogPrinter.isPrintable(LOG_PRIORITY_DEBUG, tag)) {
             mLogPrinter.print(LOG_PRIORITY_DEBUG, tag,
-                    String.format("json=>%s", json == null ? "null" : json));
+                    String.format("json => %s", json == null ? "null" : json));
         }
         return this;
     }

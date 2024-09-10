@@ -9,6 +9,7 @@ import com.threshold.toolbox.log.LogTag;
 import com.threshold.toolbox.log.SLog;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -21,7 +22,7 @@ public class AssetsUtilTest {
     @Test
     public void testCopyAssets() throws IOException {
         // Context of the app under test.
-        Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        final Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         SLog.d("Start copy.");
 //        final String[] cae_bundles = appContext.getAssets().list("cae_bundles");
 //        Log.d(TAG,"cae_bundles =" + cae_bundles.length);

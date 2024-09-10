@@ -37,7 +37,7 @@ public class LoggerFactory {
     @NonNull
     public static ILog create(@LogStrategy int logStrategy, @Nullable final String defaultLogTag,
                               final int methodOffset, @NonNull final Printer printer) {
-        ILog iLog;
+        final ILog iLog;
         if (logStrategy == LOG_STRATEGY_WITH_TRACE) {
             iLog = new TracerLogger(defaultLogTag, methodOffset, printer);
         } else if (logStrategy == LOG_STRATEGY_DEFAULT) {

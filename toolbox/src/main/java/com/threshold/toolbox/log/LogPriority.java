@@ -1,6 +1,7 @@
 package com.threshold.toolbox.log;
 
 import androidx.annotation.IntDef;
+
 import android.util.Log;
 
 import java.lang.annotation.*;

@@ -4,25 +4,34 @@ import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+/**
+ * @noinspection CallToPrintStackTrace
+ */
 @SuppressWarnings("unused")
 public class ByteUtil {
 
-    private ByteUtil(){
+    private ByteUtil() {
         throw new IllegalStateException("no instance");
     }
 
+    /**
+     * a buffer wrapper
+     */
     public static class BufferWrapper {
         private final byte[] buffer;
-        //current bytes in use.
+        // current bytes in use.
         private int bufferUsed;
 
         public BufferWrapper(int bufferCapacity) {
+            if (bufferCapacity < 1) {
+                throw new IllegalArgumentException("bad buffer.capacity");
+            }
             this.buffer = new byte[bufferCapacity];
         }
 
         public BufferWrapper(final byte[] buffer, final int bufferUsed) {
-            this.bufferUsed = bufferUsed;
             this.buffer = buffer;
+            setBufferUsed(bufferUsed);
         }
 
         public byte[] getBuffer() {
@@ -34,6 +43,11 @@ public class ByteUtil {
         }
 
         public void setBufferUsed(final int bufferUsed) {
+            if (bufferUsed > this.buffer.length) {
+                throw new IllegalArgumentException(
+                        String.format("buffer.capacity=%d, but bufferUsed=%d",
+                                this.buffer.length, bufferUsed));
+            }
             this.bufferUsed = bufferUsed;
         }
     }
@@ -45,84 +59,58 @@ public class ByteUtil {
     // 若是想以float形式打开听，需要归一化，也就是-1 ~ 1， int需要乘2次这个系数
     private static final float INT2FLOAT_RATIO = 0.0000152587890625f;
 
-    //将int数值转成小端字节流
-    //public static byte[] getLittleEndianByteFromInt(int data) {
-    //    byte[] temp = new byte[4];
-    //    temp[0] = (byte) (0xFF & (data));
-    //    temp[1] = (byte) (0xFF & (data >> 8));
-    //    temp[2] = (byte) (0xFF & (data >> 16));
-    //    temp[3] = (byte) (0xFF & (data >> 24));
-    //    return temp;
-    //}
-
     /**
      * 将int转成 大端模式 byte[]
      */
     public static byte[] intToBigEndianBytes(int value) {
-        byte[] out = new byte[4];
-        out[0] = (byte) ((value >> 24) & 0xFF);
-        out[1] = (byte) ((value >> 16) & 0xFF);
-        out[2] = (byte) ((value >> 8) & 0xFF);
-        out[3] = (byte) (value & 0xFF);
+        final byte[] out = new byte[4];
+        intToBigEndianBytes(value, out, 0);
         return out;
     }
 
-    public static void intToBigEndianBytes(int value, byte[] out, int out_offset) {
-        //byte[] out = new byte[4];
-        out[out_offset] = (byte) ((value >> 24) & 0xFF);
-        out[out_offset + 1] = (byte) ((value >> 16) & 0xFF);
-        out[out_offset + 2] = (byte) ((value >> 8) & 0xFF);
-        out[out_offset + 3] = (byte) (value & 0xFF);
-        //return out;
+    public static void intToBigEndianBytes(int value, byte[] out, int outOffset) {
+        out[outOffset] = (byte) ((value >> 24) & 0xFF);
+        out[outOffset + 1] = (byte) ((value >> 16) & 0xFF);
+        out[outOffset + 2] = (byte) ((value >> 8) & 0xFF);
+        out[outOffset + 3] = (byte) (value & 0xFF);
     }
 
     /**
      * 将int转成 小端模式 byte[]
      */
     public static byte[] intToLittleEndianBytes(int value) {
-        byte[] out = new byte[4];
-        out[3] = (byte) ((value >> 24) & 0xFF);
-        out[2] = (byte) ((value >> 16) & 0xFF);
-        out[1] = (byte) ((value >> 8) & 0xFF);
-        out[0] = (byte) (value & 0xFF);
+        final byte[] out = new byte[4];
+        intToLittleEndianBytes(value, out, 0);
         return out;
     }
 
-    public static void intToLittleEndianBytes(int value, byte[] out, int out_offset) {
-        //byte[] out = new byte[4];
-        out[out_offset + 3] = (byte) ((value >> 24) & 0xFF);
-        out[out_offset + 2] = (byte) ((value >> 16) & 0xFF);
-        out[out_offset + 1] = (byte) ((value >> 8) & 0xFF);
-        out[out_offset] = (byte) (value & 0xFF);
-        //return out;
+    public static void intToLittleEndianBytes(int value, byte[] out, int outOffset) {
+        out[outOffset + 3] = (byte) ((value >> 24) & 0xFF);
+        out[outOffset + 2] = (byte) ((value >> 16) & 0xFF);
+        out[outOffset + 1] = (byte) ((value >> 8) & 0xFF);
+        out[outOffset] = (byte) (value & 0xFF);
     }
 
     public static byte[] shortToBigEndianBytes(short value) {
-        byte[] out = new byte[2];
-        out[0] = (byte) ((value >> 8) & 0xFF);
-        out[1] = (byte) (value & 0xFF);
+        final byte[] out = new byte[2];
+        shortToBigEndianBytes(value, out, 0);
         return out;
     }
 
-    public static void shortToBigEndianBytes(short value, byte[] out, int out_offset) {
-        //byte[] out = new byte[2];
-        out[out_offset] = (byte) ((value >> 8) & 0xFF);
-        out[out_offset + 1] = (byte) (value & 0xFF);
-        //return out;
+    public static void shortToBigEndianBytes(short value, byte[] out, int outOffset) {
+        out[outOffset] = (byte) ((value >> 8) & 0xFF);
+        out[outOffset + 1] = (byte) (value & 0xFF);
     }
 
     public static byte[] shortToLittleEndianBytes(short value) {
-        byte[] out = new byte[2];
-        out[1] = (byte) ((value >> 8) & 0xFF);
-        out[0] = (byte) (value & 0xFF);
+        final byte[] out = new byte[2];
+        shortToLittleEndianBytes(value, out, 0);
         return out;
     }
 
-    public static void shortToLittleEndianBytes(short value, byte[] out, int out_offset) {
-        //byte[] out = new byte[2];
-        out[out_offset + 1] = (byte) ((value >> 8) & 0xFF);
-        out[out_offset] = (byte) (value & 0xFF);
-        //return out;
+    public static void shortToLittleEndianBytes(short value, byte[] out, int outOffset) {
+        out[outOffset + 1] = (byte) ((value >> 8) & 0xFF);
+        out[outOffset] = (byte) (value & 0xFF);
     }
 
     /**
@@ -173,8 +161,8 @@ public class ByteUtil {
      * 32bit signed int to 32bit short's float
      */
     public static byte[] transformIntToShortFloat(byte[] input, int offset, int length) {
-        int inputSamples = length / 4; // 32 bit input,  4 bytes per sample
-        byte[] out = new byte[length];
+        final int inputSamples = length / 4; // 32 bit input,  4 bytes per sample
+        final byte[] out = new byte[length];
 //        ByteArrayOutputStream bos = new ByteArrayOutputStream(length);
         try {
             for (int n = 0; n < inputSamples; n++) {
@@ -213,23 +201,24 @@ public class ByteUtil {
         return bos.toByteArray();
     }
 
-
-    public static float[] convertShortToFloat(byte[] input) { //16bit to 32bit float.Here is reference: https://blog.csdn.net/kimmking/article/details/8752737
+    //16bit to 32bit float.Here is reference: https://blog.csdn.net/kimmking/article/details/8752737
+    public static float[] convertShortToFloat(byte[] input) {
         final int inputSamples = input.length / 2; // 16 bit input, so 2 bytes per sample
         final float[] output = new float[inputSamples];
         int outputIndex = 0;
-        for(int n = 0; n < inputSamples; n++) {
-            short sample = BitConverter.toInt16(input,n*2);
+        for (int n = 0; n < inputSamples; n++) {
+            short sample = BitConverter.toInt16(input, n * 2);
             output[outputIndex++] = sample / 32768f;
         }
         return output;
     }
 
-    public static void convertShortToFloat(byte[] input, byte[] output) { //16bit to 32bit float.Here is reference: https://blog.csdn.net/kimmking/article/details/8752737
+    //16bit to 32bit float.Here is reference: https://blog.csdn.net/kimmking/article/details/8752737
+    public static void convertShortToFloat(byte[] input, byte[] output) {
         final int inputSamples = input.length / 2; // 16 bit input, so 2 bytes per sample
         //float[] output = new float[inputSamples];
-        for(int n = 0; n < inputSamples; n++) {
-            short sample = BitConverter.toInt16(input,n*2);
+        for (int n = 0; n < inputSamples; n++) {
+            short sample = BitConverter.toInt16(input, n * 2);
             float fSample = sample / 32768f;
             byte[] fBytes = float2bytes(fSample);
             System.arraycopy(fBytes, 0, output, n * 4, 4);
@@ -275,10 +264,11 @@ public class ByteUtil {
 
 
     public static short twoByte2short(byte[] bytes, int offset) {
-        ByteBuffer bb = ByteBuffer.allocate(2);
+        final ByteBuffer bb = ByteBuffer.allocate(2);
         bb.order(ByteOrder.LITTLE_ENDIAN);
         bb.put(bytes[offset]);
-        bb.put(bytes[offset + 1]);bb.reset();
+        bb.put(bytes[offset + 1]);
+        bb.reset();
         return bb.getShort(0);
     }
 
@@ -318,11 +308,11 @@ public class ByteUtil {
         int l;
         l = b[index];
         l &= 0xff;
-        l |= ((long) b[index + 1] << 8);
+        l |= (int) ((long) b[index + 1] << 8);
         l &= 0xffff;
-        l |= ((long) b[index + 2] << 16);
+        l |= (int) ((long) b[index + 2] << 16);
         l &= 0xffffff;
-        l |= ((long) b[index + 3] << 24);
+        l |= (int) ((long) b[index + 3] << 24);
         return Float.intBitsToFloat(l);
     }
 
@@ -334,10 +324,11 @@ public class ByteUtil {
      * @param inBuffer  双声道音频
      * @param outBuffer 单声道音频
      */
-    public static void transform32bitStereoTo32bitMono(final BufferWrapper inBuffer, final BufferWrapper outBuffer) {
+    public static void transform32bitStereoTo32bitMono(final BufferWrapper inBuffer,
+                                                       final BufferWrapper outBuffer) {
 //        byte[] monoData = new byte[bufferLen / 2];
         int outIndex = 0;
-        for (int i = 0; i < inBuffer.bufferUsed; i += 4 * 2) {
+        for (int i = 0; i < inBuffer.bufferUsed; i += (4 * 2)) {
             System.arraycopy(inBuffer.buffer, i, outBuffer.buffer, outIndex, 4);
             outIndex += 4;
         }
@@ -354,14 +345,17 @@ public class ByteUtil {
      * @param inBuffer  16bit 音频
      * @param outBuffer 32bit 音频
      */
-    public static void transform16bitTo32bitSigned(final BufferWrapper inBuffer, final BufferWrapper outBuffer) {
+    public static void transform16bitTo32bitSigned(final BufferWrapper inBuffer,
+                                                   final BufferWrapper outBuffer) {
 //        byte[] outputs = new byte[bufferLen * 2];//16bit --> 32bit
+        if (outBuffer.buffer.length < inBuffer.bufferUsed * 2) {
+            throw new IllegalArgumentException("outBuffer is not enough.");
+        }
         int outputIndex = 0;
-        int inputSamples = inBuffer.bufferUsed / 2; // 16 bit input, so 2 bytes per sample
-        for (int n = 0; n < inputSamples; n++) {
-            int sample = BitConverter.toInt16(inBuffer.buffer, n * 2) << 16;
-            byte[] intBytes = ByteUtil.intToLittleEndianBytes(sample);
-            System.arraycopy(intBytes, 0, outBuffer.buffer, outputIndex, 4);
+        final int inputSamples = inBuffer.bufferUsed / 2; // 16 bit input, so 2 bytes per sample
+        for (int n = 0; n < inputSamples; ++n) {
+            final int sample = (BitConverter.toInt16(inBuffer.buffer, n * 2) << 16);
+            intToLittleEndianBytes(sample, outBuffer.buffer, outputIndex);
             outputIndex += 4;
         }
         outBuffer.setBufferUsed(outputIndex);
@@ -379,7 +373,8 @@ public class ByteUtil {
      * @param outRate   输出音频 采样率
      * @param outBuffer 输出音频Buffer
      */
-    public static void resampleForDownRate(final BufferWrapper inBuffer, final int inChannels, final int inRate, final int sampleBit,
+    public static void resampleForDownRate(final BufferWrapper inBuffer, final int inChannels,
+                                           final int inRate, final int sampleBit,
                                            final int outRate, final BufferWrapper outBuffer) {
         final int sampleSize = sampleBit / 8;
         //每次循环中取多少数据出来处理

@@ -10,9 +10,9 @@
 //=======================================================================
 
 JNIEXPORT jint JNICALL
-Java_com_threshold_jni_ToolboxJni_rbufCreate(JNIEnv *env, jclass clazz,
-                                             jlongArray _handle_holder,
-                                             jint _buffer_size) {
+Java_com_threshold_jni_RingBufferJni_create(JNIEnv *env, jclass clazz,
+                                            jlongArray _handle_holder,
+                                            jint _buffer_size) {
     if (_buffer_size < 2) {
         return -1;
     }
@@ -27,9 +27,9 @@ Java_com_threshold_jni_ToolboxJni_rbufCreate(JNIEnv *env, jclass clazz,
 }
 
 JNIEXPORT jint JNICALL
-Java_com_threshold_jni_ToolboxJni_rbufAvailableRead(JNIEnv *env, jclass clazz,
-                                                    jlong _handle,
-                                                    jintArray _data_len_holder) {
+Java_com_threshold_jni_RingBufferJni_availableRead(JNIEnv *env, jclass clazz,
+                                                   jlong _handle,
+                                                   jintArray _data_len_holder) {
     ring_buffer_handle handle = LONG64_TO_PTR(_handle);
 
     jint *data_len_holder = (*env)->GetIntArrayElements(env, _data_len_holder, NULL);
@@ -40,9 +40,9 @@ Java_com_threshold_jni_ToolboxJni_rbufAvailableRead(JNIEnv *env, jclass clazz,
 }
 
 JNIEXPORT jint JNICALL
-Java_com_threshold_jni_ToolboxJni_rbufAvailableWrite(JNIEnv *env, jclass clazz,
-                                                     jlong _handle,
-                                                     jintArray _data_len_holder) {
+Java_com_threshold_jni_RingBufferJni_availableWrite(JNIEnv *env, jclass clazz,
+                                                    jlong _handle,
+                                                    jintArray _data_len_holder) {
     ring_buffer_handle handle = LONG64_TO_PTR(_handle);
 
     jint *data_len_holder = (*env)->GetIntArrayElements(env, _data_len_holder, NULL);
@@ -53,9 +53,9 @@ Java_com_threshold_jni_ToolboxJni_rbufAvailableWrite(JNIEnv *env, jclass clazz,
 }
 
 JNIEXPORT jint JNICALL
-Java_com_threshold_jni_ToolboxJni_rbufDiscard(JNIEnv *env, jclass clazz,
-                                              jlong _handle,
-                                              jint _len) {
+Java_com_threshold_jni_RingBufferJni_discard(JNIEnv *env, jclass clazz,
+                                             jlong _handle,
+                                             jint _len) {
     ring_buffer_handle handle = LONG64_TO_PTR(_handle);
 
     uint32_t len = (uint32_t) _len;
@@ -65,9 +65,9 @@ Java_com_threshold_jni_ToolboxJni_rbufDiscard(JNIEnv *env, jclass clazz,
 }
 
 JNIEXPORT jint JNICALL
-Java_com_threshold_jni_ToolboxJni_rbufPeek(JNIEnv *env, jclass clazz,
-                                           jlong _handle,
-                                           jbyteArray _data, jint _offset, jint _len) {
+Java_com_threshold_jni_RingBufferJni_peek(JNIEnv *env, jclass clazz,
+                                          jlong _handle,
+                                          jbyteArray _data, jint _offset, jint _len) {
     ring_buffer_handle handle = LONG64_TO_PTR(_handle);
 
     jbyte *data = (*env)->GetByteArrayElements(env, _data, NULL);
@@ -81,9 +81,9 @@ Java_com_threshold_jni_ToolboxJni_rbufPeek(JNIEnv *env, jclass clazz,
 }
 
 JNIEXPORT jint JNICALL
-Java_com_threshold_jni_ToolboxJni_rbufRead(JNIEnv *env, jclass clazz,
-                                           jlong _handle,
-                                           jbyteArray _data, jint _offset, jint _len) {
+Java_com_threshold_jni_RingBufferJni_read(JNIEnv *env, jclass clazz,
+                                          jlong _handle,
+                                          jbyteArray _data, jint _offset, jint _len) {
     ring_buffer_handle handle = LONG64_TO_PTR(_handle);
 
     jbyte *data = (*env)->GetByteArrayElements(env, _data, NULL);
@@ -97,9 +97,9 @@ Java_com_threshold_jni_ToolboxJni_rbufRead(JNIEnv *env, jclass clazz,
 }
 
 JNIEXPORT jint JNICALL
-Java_com_threshold_jni_ToolboxJni_rbufWrite(JNIEnv *env, jclass clazz,
-                                            jlong _handle,
-                                            jbyteArray _data, jint _offset, jint _len) {
+Java_com_threshold_jni_RingBufferJni_write(JNIEnv *env, jclass clazz,
+                                           jlong _handle,
+                                           jbyteArray _data, jint _offset, jint _len) {
     ring_buffer_handle handle = LONG64_TO_PTR(_handle);
 
     jbyte *data = (*env)->GetByteArrayElements(env, _data, NULL);
@@ -113,8 +113,8 @@ Java_com_threshold_jni_ToolboxJni_rbufWrite(JNIEnv *env, jclass clazz,
 }
 
 JNIEXPORT jint JNICALL
-Java_com_threshold_jni_ToolboxJni_rbufClear(JNIEnv *env, jclass clazz,
-                                            jlong _handle) {
+Java_com_threshold_jni_RingBufferJni_clear(JNIEnv *env, jclass clazz,
+                                           jlong _handle) {
     ring_buffer_handle handle = LONG64_TO_PTR(_handle);
 
     RingBuffer_clear(handle);
@@ -122,8 +122,8 @@ Java_com_threshold_jni_ToolboxJni_rbufClear(JNIEnv *env, jclass clazz,
 }
 
 JNIEXPORT jint JNICALL
-Java_com_threshold_jni_ToolboxJni_rbufDestroy(JNIEnv *env, jclass clazz,
-                                              jlongArray _handle_holder) {
+Java_com_threshold_jni_RingBufferJni_destroy(JNIEnv *env, jclass clazz,
+                                             jlongArray _handle_holder) {
     jlong *handle_holder = (*env)->GetLongArrayElements(env, _handle_holder, NULL);
     ring_buffer_handle handle = LONG64_TO_PTR(handle_holder[0]);
 

@@ -38,8 +38,8 @@ public class SimpleDiskPrinter implements Printer {
     public SimpleDiskPrinter(@NonNull final File toSaveLogFile, final int logBufferSize,
                              @Nullable final Printer parent, final boolean isAlsoOutputParent) {
         this.mFileWriter = new AsyncFileWriter(toSaveLogFile, logBufferSize);
-        this.mIsAlsoOutputParent = isAlsoOutputParent;
         this.mParentPrinter = parent;
+        this.mIsAlsoOutputParent = isAlsoOutputParent;
         this.mMyPid = Process.myPid();
     }
 
