@@ -24,15 +24,15 @@ public class AssetsUtilTest {
         // Context of the app under test.
         final Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         SLog.d("Start copy.");
-//        final String[] cae_bundles = appContext.getAssets().list("cae_bundles");
-//        Log.d(TAG,"cae_bundles =" + cae_bundles.length);
-//        org.junit.Assert.assertTrue("cae_bundles length == 0",cae_bundles.length > 0);
 
-        boolean succeed = AssetsUtil.copyAssetFolder(appContext.getAssets(),
+        boolean succeed = AssetsUtil.copyAssetFile(appContext.getAssets(),
+                "bundles/sub_dir/test.txt",
+                "/sdcard/Download/test.txt");
+        succeed &= AssetsUtil.copyAssetFolder(appContext.getAssets(),
                 "bundles",
-                "/sdcard/asset_test/");
+                "/sdcard/Download/asset_test/");
         Assert.assertTrue(succeed);
-//        AssetsUtil.copyAssetFile(appContext.getAssets(), "cfg/optm.cfg", "/sdcard/test/optm.cfg");
+
         SLog.d("Copy complete.");
     }
 

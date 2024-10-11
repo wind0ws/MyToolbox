@@ -42,7 +42,9 @@
 
 # For enumeration classes, see http://proguard.sourceforge.net/manual/examples.html#enumerations
 #保留混淆枚举中的values()和valueOf()方法
--keepclassmembers enum * {
+-keepclassmembers public enum * {
+    <fields>;
+    <methods>;
     public static **[] values();
     public static ** valueOf(java.lang.String);
 }
