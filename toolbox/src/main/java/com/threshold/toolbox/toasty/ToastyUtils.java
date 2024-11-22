@@ -29,7 +29,7 @@ import com.threshold.toolbox.R;
  * GNU General Public License for more details.
  * <p>
  * You should have received a copy of the GNU General Public License
- * along with Toasty.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Toasty.  If not, see <<a href="http://www.gnu.org/licenses/">licenses</a>>.
  */
 
 final class ToastyUtils {
@@ -48,12 +48,7 @@ final class ToastyUtils {
     }
 
     static void setBackground(@NonNull View view, Drawable drawable) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-            view.setBackground(drawable);
-        } else {
-            //view.setBackgroundDrawable(drawable);
-            view.setBackground(drawable);
-        }
+        view.setBackground(drawable);
     }
 
     static Drawable getDrawable(@NonNull Context context, @DrawableRes int id) {

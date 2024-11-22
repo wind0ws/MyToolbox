@@ -7,6 +7,7 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import android.util.Log;
 import android.widget.Toast;
@@ -24,12 +25,12 @@ public class ToastUtil {
     private static class MyToastHandler extends Handler {
 
         private static class ToastGravity implements Serializable {
-            int gravity, xoffset, yoffset;
+            int gravity, xOffset, yOffset;
 
-            ToastGravity(final int gravity, final int xoffset, final int yoffset) {
+            ToastGravity(final int gravity, final int xOffset, final int yOffset) {
                 this.gravity = gravity;
-                this.xoffset = xoffset;
-                this.yoffset = yoffset;
+                this.xOffset = xOffset;
+                this.yOffset = yOffset;
             }
         }
 
@@ -57,7 +58,8 @@ public class ToastUtil {
             sendToastMsg(false, text, duration, -1, -1, -1);
         }
 
-        void toast(CharSequence text, int duration, int gravity, int gravityXOffset, int gravityYOffset) {
+        void toast(CharSequence text, int duration,
+                   int gravity, int gravityXOffset, int gravityYOffset) {
             sendToastMsg(false, text, duration, gravity, gravityXOffset, gravityYOffset);
         }
 
@@ -65,11 +67,13 @@ public class ToastUtil {
             sendToastMsg(true, text, duration, -1, -1, -1);
         }
 
-        void toastImmediately(CharSequence text, int duration, int gravity, int gravityXOffset, int gravityYOffset) {
+        void toastImmediately(CharSequence text, int duration,
+                              int gravity, int gravityXOffset, int gravityYOffset) {
             sendToastMsg(true, text, duration, gravity, gravityXOffset, gravityYOffset);
         }
 
-        private void sendToastMsg(boolean isImmediately, CharSequence text, int duration, int gravity, int gravityXOffset, int gravityYOffset) {
+        private void sendToastMsg(boolean isImmediately, CharSequence text, int duration,
+                                  int gravity, int gravityXOffset, int gravityYOffset) {
             final ToastInfo toastInfo = new ToastInfo();
             toastInfo.text = text;
             toastInfo.duration = duration;
@@ -82,7 +86,7 @@ public class ToastUtil {
             obtainMessage(isImmediately ? MSG_WHAT_TOAST_IMMEDIATELY : MSG_WHAT_TOAST, toastInfo).sendToTarget();
         }
 
-        private void showToast(Toast toast, ToastInfo toastInfo) {
+        private void showToast(@Nullable Toast toast, @NonNull ToastInfo toastInfo) {
             if (toast == null) {
                 toast = Toast.makeText(mContext, toastInfo.text, toastInfo.duration);
             } else {
@@ -90,7 +94,7 @@ public class ToastUtil {
                 toast.setDuration(toastInfo.duration);
             }
             if (toastInfo.gravity != null) {
-                toast.setGravity(toastInfo.gravity.gravity, toastInfo.gravity.xoffset, toastInfo.gravity.yoffset);
+                toast.setGravity(toastInfo.gravity.gravity, toastInfo.gravity.xOffset, toastInfo.gravity.yOffset);
             }
             toast.show();
             if (toast != mImmediatelyToast) {
@@ -123,7 +127,7 @@ public class ToastUtil {
                     break;
             }
         }
-    }
+    } // end of MyToastHandler
 
 
     private static volatile ToastUtil sToastUtil;

@@ -58,21 +58,27 @@ public class AssetsUtil {
         final File destinationFile = new File(toPath);
 
         if (destinationFile.exists()) {
-            if (CopyMode.OVERRIDE_FORCED != copyMode) {
+            do {
+                if (CopyMode.OVERRIDE_FORCED == copyMode) {
+                    break; // no need handle OVERRIDE_FORCED
+                }
                 if (CopyMode.COPY_IF_DEST_NOT_EXISTS == copyMode) {
                     Log.v(TAG, String.format("\"%s\" is already exists. no need copy.", toPath));
                     return true;
                 }
-                if (CopyMode.OVERRIDE_IF_DEST_SIZE_NOT_MATCHED == copyMode) {
-                    final long destinationFileLength = destinationFile.length();
-                    final long assetFileLength = getAssetSize(assetManager, fromAssetFilePath);
-                    if (destinationFileLength == assetFileLength) {
-                        Log.v(TAG, String.format("\"%s\" is already exists, size(%d) are same. " +
-                                "no need copy", toPath, destinationFileLength));
-                        return true;
-                    }
+
+                if (CopyMode.OVERRIDE_IF_DEST_SIZE_NOT_MATCHED != copyMode) {
+                    break;
                 }
-            }
+                // now copyMode is CopyMode.OVERRIDE_IF_DEST_SIZE_NOT_MATCHED, detected file size.
+                final long destinationFileLength = destinationFile.length();
+                final long assetFileLength = getAssetSize(assetManager, fromAssetFilePath);
+                if (destinationFileLength == assetFileLength) {
+                    Log.v(TAG, String.format("\"%s\" is already exists, size(%d) are same. " +
+                            "no need copy", toPath, destinationFileLength));
+                    return true;
+                }
+            } while (false);
 
             if (!destinationFile.delete()) {
                 Log.e(TAG, String.format("\"%s\" exists, but delete it failed!", toPath));

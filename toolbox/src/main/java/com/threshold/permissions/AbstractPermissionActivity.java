@@ -9,7 +9,7 @@ import android.widget.Toast;
 
 import com.threshold.toolbox.R;
 
-public abstract class PermissionActivity extends AppCompatActivity {
+public abstract class AbstractPermissionActivity extends AppCompatActivity {
 
     protected boolean mIsAllPermissionGranted = false;
     private PermissionManager mPermissionManager;
@@ -18,7 +18,7 @@ public abstract class PermissionActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mPermissionManager = new PermissionManager() {
+        mPermissionManager = new PermissionManager(65535) {
             @Override
             public void ifCancelledAndCannotRequest(Activity activity) {
                 //super.ifCancelledAndCannotRequest(activity);
@@ -36,9 +36,8 @@ public abstract class PermissionActivity extends AppCompatActivity {
                                            @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        mPermissionManager.checkPermissionsResult(this, requestCode, permissions, grantResults);
-        final PermissionManager.PermissionStatus status = mPermissionManager.checkPermission(this);
-        if (status.denied.size() > 0) {
+        final PermissionManager.PermissionStatus status = mPermissionManager.checkPermissionsResult(this, requestCode, permissions, grantResults);
+        if (null == status || !status.denied.isEmpty()) {
             return;
         }
         mIsAllPermissionGranted = true;

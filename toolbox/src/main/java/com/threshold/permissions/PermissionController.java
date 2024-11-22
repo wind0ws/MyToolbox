@@ -2,10 +2,15 @@ package com.threshold.permissions;
 
 import android.app.Activity;
 import androidx.annotation.NonNull;
+
+import android.content.Intent;
 import android.util.Log;
 import android.widget.Toast;
 
 import com.threshold.toolbox.R;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Simple permission controller, help you request app permission from user.
@@ -35,7 +40,7 @@ import com.threshold.toolbox.R;
  *                 finish();
  *             }
  *         });
- *         mPermissionController.init(this); // do permission check
+ *         mPermissionController.checkAndRequestPermission(this); // do permission check
  *     }
  *
  *     //@Override
@@ -53,75 +58,89 @@ import com.threshold.toolbox.R;
  */
 public class PermissionController {
 
-    private boolean mIsAllPermissionGranted = false;
-    private PermissionManager mPermissionManager;
-    private final OnPermissionChangedListener mOnPermissionChangedListener;
+    private static final String TAG = "PermissionController";
 
-    public interface OnPermissionChangedListener {
-        void onAllPermissionGranted();
+    private final PermissionManager mPermissionManager;
+    private final OnPermissionAuthorizationChangedListener mOnPermissionAuthorizationChangedListener;
 
-        void onSomePermissionPermanentlyDenied();
+
+    public interface OnPermissionAuthorizationChangedListener {
+        void onAllPermissionsGranted();
+
+        void onSomePermissionsPermanentlyDenied();
     }
 
-    public PermissionController(OnPermissionChangedListener permissionChangedListener) {
-        this.mOnPermissionChangedListener = permissionChangedListener;
-    }
-
-    // call it Activity onCreate()  (after setContentView() )
-    public void init(Activity act) {
-        mPermissionManager = new PermissionManager() {
+    public PermissionController(OnPermissionAuthorizationChangedListener permissionChangedListener,
+                                int permissionsRequestCode) {
+        this.mOnPermissionAuthorizationChangedListener = permissionChangedListener;
+        mPermissionManager = new PermissionManager(permissionsRequestCode) {
             @Override
             public void ifCancelledAndCannotRequest(Activity activity) {
                 //super.ifCancelledAndCannotRequest(activity);
-                onSomePermissionPermanentlyDenied(activity);
+                onSomePermissionsPermanentlyDenied(activity);
             }
         };
+    }
+
+    /**
+     *  call it at Activity onCreate()  (after setContentView() )
+     *  we will checkAndRequestPermissions immediately.
+     *
+     * @param act Activity
+     */
+    public void checkAndRequestPermission(Activity act) {
         if (mPermissionManager.checkAndRequestPermissions(act)) {
-            onAllPermissionGranted();
+            onAllPermissionsGranted();
         }
     }
 
-    // call it Activity.onRequestPermissionsResult
+    public PermissionManager.PermissionStatus checkPermissions(Activity activity) {
+        return mPermissionManager.checkPermissions(activity);
+    }
+
+    // call it at Activity.onActivityResult
+    public void resolveActivityResult(@NotNull final Activity activity, final int requestCode,
+                                      final int resultCode, @Nullable final Intent data) {
+        mPermissionManager.checkActivityResult(activity, requestCode, resultCode, data);
+    }
+
+    // call it at Activity.onRequestPermissionsResult
     public void resolveRequestPermissionsResult(Activity activity,
                                                 int requestCode,
                                                 @NonNull String[] permissions,
                                                 @NonNull int[] grantResults) {
-        mPermissionManager.checkPermissionsResult(activity, requestCode, permissions, grantResults);
-        final PermissionManager.PermissionStatus status = mPermissionManager.checkPermission(activity);
-        if (status.denied.size() > 0) {
+        final PermissionManager.PermissionStatus status = mPermissionManager
+                .checkPermissionsResult(activity, requestCode, permissions, grantResults);
+        if (null == status) {
+            return;
+        }
+        if (!status.denied.isEmpty()) {
             for (int i = 0; i < status.denied.size(); ++i) {
-                Log.e("PermissionController", "you denied: " + status.denied.get(i));
+                Log.e(TAG, "you denied: " + status.denied.get(i));
             }
             return;
         }
-        onAllPermissionGranted();
+        onAllPermissionsGranted();
     }
 
-    public boolean isAllPermissionGranted() {
-        return mIsAllPermissionGranted;
-    }
-
-    public PermissionManager.PermissionStatus checkPermission(Activity activity) {
-        return mPermissionManager.checkPermission(activity);
-    }
-
-    protected void onAllPermissionGranted() {
-        mIsAllPermissionGranted = true;
-        if (mOnPermissionChangedListener != null) {
-            mOnPermissionChangedListener.onAllPermissionGranted();
+    protected void onAllPermissionsGranted() {
+        Log.i(TAG, "congratulations: onAllPermissionsGranted");
+        if (mOnPermissionAuthorizationChangedListener != null) {
+            mOnPermissionAuthorizationChangedListener.onAllPermissionsGranted();
         }
     }
 
-    protected void onSomePermissionPermanentlyDenied(Activity activity) {
-        if (mOnPermissionChangedListener != null) {
-            mOnPermissionChangedListener.onSomePermissionPermanentlyDenied();
+    protected void onSomePermissionsPermanentlyDenied(Activity activity) {
+        Log.w(TAG, "oops: onSomePermissionsPermanentlyDenied");
+        if (mOnPermissionAuthorizationChangedListener != null) {
+            mOnPermissionAuthorizationChangedListener.onSomePermissionsPermanentlyDenied();
             return;
         }
+        SystemSettingUtils.toPermissionSetting(activity);
         Toast.makeText(activity.getApplicationContext(),
                 R.string.tip_no_permission_exit,
                 Toast.LENGTH_LONG)
                 .show();
-        SystemSettingUtils.toPermissionSetting(activity);
         activity.finish();
     }
 

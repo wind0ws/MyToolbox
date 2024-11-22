@@ -1,5 +1,6 @@
 package com.threshold.mytoolbox
 
+import android.content.Intent
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -14,17 +15,23 @@ import com.threshold.toolbox.log.LogTag
 import com.threshold.toolbox.log.SLog
 
 @LogTag("MainAct")
-class MainActivity : AppCompatActivity(), PermissionController.OnPermissionChangedListener {
+class MainActivity : AppCompatActivity(),
+    PermissionController.OnPermissionAuthorizationChangedListener {
 
-//    companion object{
+    companion object{
 //        @Keep
 //        @JvmStatic
 //        val TAG = "MainAct"
-//    }
+
+        val REQUEST_CODE_FOR_PERMISSIONS = 65535
+    }
 
     private val mHandler = Handler(Looper.myLooper()!!)
     private var mToastTimes = 0
-    private val mPermissionController = PermissionController(this)
+    private val mPermissionController = PermissionController(
+        this,
+        REQUEST_CODE_FOR_PERMISSIONS
+    )
     private lateinit var mMainViewBinding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,10 +39,9 @@ class MainActivity : AppCompatActivity(), PermissionController.OnPermissionChang
 //        DensityUtil.setupDensity(application, this)
         mMainViewBinding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(mMainViewBinding.root)
-//        setContentView(R.layout.activity_main)
 
-        // now request permission from user
-        mPermissionController.init(this)
+        // now request permissions from user
+        mPermissionController.checkAndRequestPermission(this)
 
         mMainViewBinding.tv1.text = applicationInfo.nativeLibraryDir
         SLog.i("nativeLibraryDir=${applicationInfo.nativeLibraryDir}")
@@ -47,10 +53,6 @@ class MainActivity : AppCompatActivity(), PermissionController.OnPermissionChang
             SLog.i("deviceProtectedDataDir=${applicationInfo.deviceProtectedDataDir}")
         }
 
-        // Example of a call to a native method
-//        mMainViewBinding.sample_text.text = NativeLibJni().stringFromJNI()
-
-//        testHiddenPublicApi()
         testToast()
         SLogTest.test()
     }
@@ -74,13 +76,21 @@ class MainActivity : AppCompatActivity(), PermissionController.OnPermissionChang
         })
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        SLog.i("onActivityResult: requestCode=%d, resultCode=%d", requestCode, resultCode)
+        super.onActivityResult(requestCode, resultCode, data)
+        // let permission controller handle it
+        mPermissionController.resolveActivityResult(this, requestCode, resultCode, data)
+    }
+
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
         grantResults: IntArray
     ) {
+        SLog.i("onRequestPermissionsResult: requestCode=%d", requestCode)
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        // let controller handle it
+        // let permission controller to handle it
         mPermissionController.resolveRequestPermissionsResult(
             this,
             requestCode,
@@ -89,21 +99,20 @@ class MainActivity : AppCompatActivity(), PermissionController.OnPermissionChang
         )
     }
 
-    override fun onAllPermissionGranted() {
-        ToastUtil.showLong(this, "OK, All permission got!")
+    override fun onDestroy() {
+        super.onDestroy()
+        SLog.d("onDestroy, bye...")
     }
 
-    override fun onSomePermissionPermanentlyDenied() {
+    override fun onAllPermissionsGranted() {
+        ToastUtil.showLong(this, "OK, All permissions got!")
+    }
+
+    override fun onSomePermissionsPermanentlyDenied() {
         ToastUtil.showLong(this, com.threshold.toolbox.R.string.tip_no_permission_exit)
         SystemSettingUtils.toPermissionSetting(this)
         finish()
     }
-
-    //call public hidden api.  must compileOnly magic android.jar
-//    private fun testHiddenPublicApi() {
-//        val id:Int = getWindowStackId()
-//        SLog.d("getWindowStackId() --> %d",id)
-//    }
 
 
 }
