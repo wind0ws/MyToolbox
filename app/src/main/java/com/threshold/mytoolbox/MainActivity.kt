@@ -18,12 +18,12 @@ import com.threshold.toolbox.log.SLog
 class MainActivity : AppCompatActivity(),
     PermissionController.OnPermissionAuthorizationChangedListener {
 
-    companion object{
+    companion object {
 //        @Keep
 //        @JvmStatic
 //        val TAG = "MainAct"
 
-        val REQUEST_CODE_FOR_PERMISSIONS = 65535
+        const val REQUEST_CODE_FOR_PERMISSIONS = 65535
     }
 
     private val mHandler = Handler(Looper.myLooper()!!)
@@ -36,12 +36,11 @@ class MainActivity : AppCompatActivity(),
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-//        DensityUtil.setupDensity(application, this)
         mMainViewBinding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(mMainViewBinding.root)
 
         // now request permissions from user
-        mPermissionController.checkAndRequestPermission(this)
+        mPermissionController.checkAndRequestPermissions(this)
 
         mMainViewBinding.tv1.text = applicationInfo.nativeLibraryDir
         SLog.i("nativeLibraryDir=${applicationInfo.nativeLibraryDir}")
@@ -54,22 +53,23 @@ class MainActivity : AppCompatActivity(),
         }
 
         testToast()
-        SLogTest.test()
+        MySLogTest.test()
     }
-
 
     private fun testToast() {
         mHandler.post(object : Runnable {
             override fun run() {
                 if (mToastTimes < 5) {
+                    SLog.i("toast.show $mToastTimes")
                     ToastUtil.showShort(this@MainActivity, "show $mToastTimes")
-                    mHandler.postDelayed(this, 2000)
+                    mHandler.postDelayed(this, 3500)
                 } else if (mToastTimes < 10) {
+                    SLog.i("toast.showImmediately $mToastTimes")
                     ToastUtil.showShortImmediately(
                         this@MainActivity, "showImmediately $mToastTimes",
                         Gravity.TOP, 0, 100
                     )
-                    mHandler.postDelayed(this, 1000)
+                    mHandler.postDelayed(this, 2000)
                 }
                 mToastTimes++
             }
@@ -100,15 +100,17 @@ class MainActivity : AppCompatActivity(),
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         SLog.d("onDestroy, bye...")
+        super.onDestroy()
     }
 
     override fun onAllPermissionsGranted() {
+        SLog.i("congratulations: onAllPermissionsGranted")
         ToastUtil.showLong(this, "OK, All permissions got!")
     }
 
     override fun onSomePermissionsPermanentlyDenied() {
+        SLog.w("oops: onSomePermissionsPermanentlyDenied")
         ToastUtil.showLong(this, com.threshold.toolbox.R.string.tip_no_permission_exit)
         SystemSettingUtils.toPermissionSetting(this)
         finish()

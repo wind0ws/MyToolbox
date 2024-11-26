@@ -6,8 +6,8 @@ import com.threshold.toolbox.log.LogTag;
 
 import java.util.Arrays;
 
-@LogTag("SLogTest")
-public class SLogTest {
+@LogTag("MySLogTest")
+public class MySLogTest {
 
 //    private static final String TAG = "SLogTest";
 

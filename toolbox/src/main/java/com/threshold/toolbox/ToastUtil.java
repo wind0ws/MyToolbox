@@ -6,9 +6,11 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+
 import android.util.Log;
 import android.widget.Toast;
 
@@ -16,8 +18,8 @@ import java.io.Serializable;
 
 /**
  * 线程安全的Toast工具
- *
- * 帮你把Toast调用转移到主线程上运行
+ * <p>
+ * 帮你把Toast调用转移到一个子线程上运行
  */
 public class ToastUtil {
 
@@ -50,7 +52,7 @@ public class ToastUtil {
         private MyToastHandler(Context context, Looper looper) {
             super(looper);
             mContext = context;
-            //坑： Toast实例都不可以在两个线程中创建，否则后面调用setText等方法都会报错
+            //坑： Toast实例都不可以在两个线程中创建，否则后面调用setText等方法都会报错, 因为Toast对象要绑定Looper
 //            mImmediatelyToast = Toast.makeText(context.getApplicationContext(), "", Toast.LENGTH_SHORT);
         }
 
@@ -87,13 +89,13 @@ public class ToastUtil {
         }
 
         private void showToast(@Nullable Toast toast, @NonNull ToastInfo toastInfo) {
-            if (toast == null) {
+            if (null == toast) {
                 toast = Toast.makeText(mContext, toastInfo.text, toastInfo.duration);
             } else {
                 toast.setText(toastInfo.text);
                 toast.setDuration(toastInfo.duration);
             }
-            if (toastInfo.gravity != null) {
+            if (null != toastInfo.gravity) {
                 toast.setGravity(toastInfo.gravity.gravity, toastInfo.gravity.xOffset, toastInfo.gravity.yOffset);
             }
             toast.show();
@@ -105,23 +107,25 @@ public class ToastUtil {
         @Override
         public void handleMessage(final Message msg) {
             final ToastInfo toastInfo = (ToastInfo) msg.obj;
-            if (toastInfo == null) {
+            if (null == toastInfo) {
                 return;
             }
             switch (msg.what) {
                 case MSG_WHAT_TOAST:
                     showToast(null, toastInfo);
                     break;
-                case MSG_WHAT_TOAST_IMMEDIATELY:
-                    if (mLastNormalToast != null) {
+                case MSG_WHAT_TOAST_IMMEDIATELY: {
+                    if (null != mLastNormalToast) {
                         mLastNormalToast.cancel();
                         mLastNormalToast = null;
                     }
-                    if (null == mImmediatelyToast) {
-                        mImmediatelyToast = Toast.makeText(mContext, "", Toast.LENGTH_SHORT);
+                    if (null != mImmediatelyToast) {
+                        mImmediatelyToast.cancel();
                     }
+                    mImmediatelyToast = Toast.makeText(mContext, "", Toast.LENGTH_SHORT);
                     showToast(mImmediatelyToast, toastInfo);
-                    break;
+                }
+                break;
                 default:
                     Log.e("ToastUtil", "unhandled msg.what=" + msg.what);
                     break;

@@ -88,7 +88,7 @@ public class PermissionController {
      *
      * @param act Activity
      */
-    public void checkAndRequestPermission(Activity act) {
+    public void checkAndRequestPermissions(Activity act) {
         if (mPermissionManager.checkAndRequestPermissions(act)) {
             onAllPermissionsGranted();
         }
