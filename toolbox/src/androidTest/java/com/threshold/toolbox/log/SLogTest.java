@@ -22,7 +22,7 @@ public class SLogTest {
 
     @Before
     public void setup(){
-        SLog.init();
+        SLog.d("hi");
     }
 
     @Test

@@ -19,7 +19,7 @@ public class MsgQueueHandlerJniTest {
 
     @BeforeClass
     public static void setup() {
-        SLog.init();
+        SLog.d("hi");
     }
 
     @Test
@@ -28,13 +28,13 @@ public class MsgQueueHandlerJniTest {
         final Random random = new Random(SystemClock.currentThreadTimeMillis());
         final MsgQueueHandlerJni.Helper msgQueueHelper = getMsgQueueHelper(random);
         final MsgQueueHandlerJni.MsgQueueData data = new MsgQueueHandlerJni.MsgQueueData(1,2,3);
-        data.obj = new byte[1024];
+        data.obj = new byte[2048];
         for (int i = 0; i < data.obj.length; ++i) {
             // generate mock data.
             data.objLen = i;
             if (i > 0) {
                 data.arg2 = i - 1;
-                data.obj[i - 1] = (byte) i;
+                data.obj[i - 1] = (byte) i; // <-- push this on last obj byte array item content.
             }
 
             while (MsgQueueHandlerJni.Helper.CODE_ERROR_FULL == (ret = msgQueueHelper.feedMsg(data))) {
@@ -43,7 +43,7 @@ public class MsgQueueHandlerJniTest {
             }
 
             if (0 != ret) {
-                SLog.d("failed(%d) on feedMsg, the msg lost!", ret);
+                SLog.e("failed(%d) on feedMsg, the msg is lost!", ret);
             }
             Assert.assertEquals(ret, 0);
 //            SystemClock.sleep(100);
@@ -64,9 +64,9 @@ public class MsgQueueHandlerJniTest {
                     public int handleMsg(final int what, final int arg1, final int arg2,
                                          final byte[] obj, final int objLen) {
                         // mock doing heavy task
-                        SystemClock.sleep(10 + random.nextInt(10));
+                        SystemClock.sleep(5 + random.nextInt(10));
                         SLog.i("received event: what=%d, arg1=%d, arg2=%d, obj_len=%d. " +
-                                        " last_byte=%d",
+                                        " last_byte_in_obj=%d",
                                 what, arg1, arg2, objLen,
                                 (null == obj || objLen <= arg2) ? -9999 : (int)(obj[arg2]));
                         return 0;

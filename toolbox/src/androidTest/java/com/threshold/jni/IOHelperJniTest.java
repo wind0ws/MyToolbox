@@ -1,7 +1,6 @@
 package com.threshold.jni;
 
 import android.content.Context;
-import android.content.res.AssetManager;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -16,8 +15,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
-@LogTag("AssetsJniTest")
-public class AssetsJniTest {
+@LogTag("IOHelperJniTest")
+@SuppressWarnings({"SpellCheckingInspection"})
+public class IOHelperJniTest {
 
     @BeforeClass
     public static void setup() {
@@ -27,16 +27,19 @@ public class AssetsJniTest {
     @Test
     public void test() {
         final Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        final AssetManager assetManager = appContext.getAssets();
-        final long[] resSizeHolder = new long[1];
-        int ret;
-        if (0 != (ret = AssetsJni.getResSize(assetManager, "bundles/sub_dir/test.txt", resSizeHolder))) {
-            SLog.e("failed(%d) on get asset size", ret);
-        }
-        Assert.assertEquals(ret, 0);
-        SLog.i("succeed get asset size: %d", resSizeHolder[0]);
-    }
 
+        String currentNativeWorkDir = IOHelperJni.nativeGetCwd();
+        SLog.d("before chdir, currentNativeWorkDir: " + currentNativeWorkDir);
+
+        final String appFilesPath = appContext.getFilesDir().getPath();
+        int ret = IOHelperJni.nativeChdir(appFilesPath);
+
+        currentNativeWorkDir = IOHelperJni.nativeGetCwd();
+        SLog.d("after chdir, currentNativeWorkDir: " + currentNativeWorkDir);
+
+        Assert.assertEquals(ret, 0);
+        SLog.i("~~~ all done ~~~");
+    }
 
     @AfterClass
     public static void tearDown() {

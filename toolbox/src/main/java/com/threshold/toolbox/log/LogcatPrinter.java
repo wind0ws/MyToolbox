@@ -16,8 +16,8 @@ public class LogcatPrinter implements Printer {
 
     @Override
     public boolean isPrintable(final int priority, @Nullable final String tag) {
-        return LoggerConfig.sCurrentLogPriority != LOG_PRIORITY_OFF &&
-                priority >= LoggerConfig.sCurrentLogPriority;
+        return (LOG_PRIORITY_OFF != LoggerConfig.sCurrentLogPriority) &&
+                (priority >= LoggerConfig.sCurrentLogPriority);
     }
 
     @Override

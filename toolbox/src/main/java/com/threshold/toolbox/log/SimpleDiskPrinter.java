@@ -32,14 +32,14 @@ public class SimpleDiskPrinter implements Printer {
      *
      * @param toSaveLogFile      the destination of log file
      * @param logBufferSize      the buffer size of flush log to file
-     * @param parent             a parent printer. could be null.
+     * @param parent             a parent printer. could be null. OR maybe you could use LogcatPrinter.
      * @param isAlsoOutputParent used to determine whether the parent printer is also need print
      */
     public SimpleDiskPrinter(@NonNull final File toSaveLogFile, final int logBufferSize,
                              @Nullable final Printer parent, final boolean isAlsoOutputParent) {
         this.mFileWriter = new AsyncFileWriter(toSaveLogFile, logBufferSize);
         this.mParentPrinter = parent;
-        this.mIsAlsoOutputParent = isAlsoOutputParent;
+        this.mIsAlsoOutputParent = (null != this.mParentPrinter) && isAlsoOutputParent;
         this.mMyPid = Process.myPid();
     }
 
@@ -49,7 +49,7 @@ public class SimpleDiskPrinter implements Printer {
      * @param saveFile the destination of log file
      */
     public SimpleDiskPrinter(@NonNull final File saveFile) {
-        this(saveFile, 0, null, false);
+        this(saveFile, 8192, null, false);
     }
 
     @Override

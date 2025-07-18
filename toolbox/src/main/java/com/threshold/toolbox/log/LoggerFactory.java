@@ -3,6 +3,7 @@ package com.threshold.toolbox.log;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
 import com.threshold.toolbox.log.llog.TracerLogger;
 
 import java.lang.annotation.*;
@@ -12,7 +13,9 @@ import java.lang.annotation.*;
  */
 public class LoggerFactory {
 
+    // normal log.
     public static final int LOG_STRATEGY_DEFAULT = 1;
+    // log with filename and line number.
     public static final int LOG_STRATEGY_WITH_TRACE = 2;
 
     @Documented
@@ -28,10 +31,11 @@ public class LoggerFactory {
 
     /**
      * create ILog impl.
-     * @param logStrategy the log strategy, determine {@link ILog} impl.
+     *
+     * @param logStrategy   the log strategy, determine {@link ILog} impl.
      * @param defaultLogTag the tag for override all log tag, can be NULL.
-     * @param methodOffset the method offset for find call stack.
-     * @param printer the log printer
+     * @param methodOffset  the method offset for find call stack.
+     * @param printer       the log printer
      * @return {@link ILog} impl.
      */
     @NonNull

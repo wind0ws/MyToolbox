@@ -1,5 +1,7 @@
 package com.threshold.toolbox.log;
 
+import static com.threshold.toolbox.log.LogPriority.*;
+
 import androidx.annotation.NonNull;
 
 /**
@@ -20,38 +22,32 @@ public class SLog {
             null, 1, new LogcatPrinter());
 
     /**
-     * init {@link SLog} with a {@link ILog}
-     * @param iLog a instance of {@link ILog}
+     * setup {@link SLog} with a {@link ILog}
      *
-     *  @see  LoggerFactory#create(int)
-     *  @see  LoggerFactory#create(int, String)
-     *  @see  LoggerFactory#create(int, String, int, Printer)
+     * @param iLog a instance of {@link ILog}
+     * @see LoggerFactory#create(int)
+     * @see LoggerFactory#create(int, String)
+     * @see LoggerFactory#create(int, String, int, Printer)
      */
-    public static void init(@NonNull ILog iLog) {
+    public static void setupImpl(@NonNull ILog iLog) {
         sILog = iLog;
     }
 
     /**
-     * init {@link SLog} with a {@link Printer}
+     * setup {@link SLog} with a {@link Printer}
      * <p>This method should only called once</p>
+     *
      * @param printer the printer which to print log
      */
-    public static void init(@NonNull Printer printer) {
+    public static void setupImpl(@NonNull Printer printer) {
         final ILog iLog = LoggerFactory.create(LoggerFactory.LOG_STRATEGY_WITH_TRACE,
                 null, 1, printer);
-        init(iLog);
-    }
-
-    /**
-     * init {@link SLog} with a {@link LogcatPrinter}.
-     * only needs to be initialized once throughout the entire process runtime.
-     */
-    public static void init() {
-        init(new LogcatPrinter());
+        setupImpl(iLog);
     }
 
     /**
      * Set the tag for all output log
+     *
      * @param defaultTag the tag
      * @return {@link ILog} instance
      */
@@ -59,57 +55,60 @@ public class SLog {
         return sILog.setDefaultTag(defaultTag);
     }
 
-    /**
-     * log debug message
-     * @param format message format
-     * @param args message args
-     * @return {@link ILog} instance
-     */
-    public static ILog d(final String format, final Object... args) {
-        return sILog.d(format, args);
-    }
-
-    /**
-     * log debug message
-     * @param tr throwable
-     * @param format message format
-     * @param args message args
-     * @return {@link ILog} instance
-     */
-    public static ILog d(final Throwable tr, final String format, final Object... args) {
-        return sILog.d(tr, format, args);
-    }
-
-    /**
-     * log debug message
-     * @param tag the specific tag
-     * @param tr throwable
-     * @param format message format
-     * @param args message args
-     * @return {@link ILog} instance
-     */
-    public static ILog d(final String tag, final Throwable tr, final String format, final Object... args) {
-        return sILog.d(tag, tr, format, args);
-    }
-
     public static ILog v(final String format, final Object... args) {
-        return sILog.v(format, args);
+        return logWithArgs(LOG_PRIORITY_VERBOSE, format, args);
     }
 
     public static ILog v(final Throwable tr, final String format, final Object... args) {
-        return sILog.v(tr, format, args);
+        return logWithThrowable(LOG_PRIORITY_VERBOSE, tr, format, args);
     }
 
     public static ILog v(final String tag, Throwable tr, final String format, final Object... args) {
         return sILog.v(tag, tr, format, args);
     }
 
+    /**
+     * log debug message
+     *
+     * @param format message format
+     * @param args   message args
+     * @return {@link ILog} instance
+     */
+    public static ILog d(final String format, final Object... args) {
+        return logWithArgs(LOG_PRIORITY_DEBUG, format, args);
+    }
+
+    /**
+     * log debug message
+     *
+     * @param tr     throwable
+     * @param format message format
+     * @param args   message args
+     * @return {@link ILog} instance
+     */
+    public static ILog d(final Throwable tr, final String format, final Object... args) {
+        return logWithThrowable(LOG_PRIORITY_DEBUG, tr, format, args);
+    }
+
+    /**
+     * log debug message
+     *
+     * @param tag    the specific tag
+     * @param tr     throwable
+     * @param format message format
+     * @param args   message args
+     * @return {@link ILog} instance
+     */
+    public static ILog d(final String tag, final Throwable tr, final String format, final Object... args) {
+        return sILog.d(tag, tr, format, args);
+    }
+
     public static ILog i(final String format, final Object... args) {
-        return sILog.i(format, args);
+        return logWithArgs(LOG_PRIORITY_INFO, format, args);
     }
 
     public static ILog i(final Throwable tr, final String format, final Object... args) {
-        return sILog.i(tr, format, args);
+        return logWithThrowable(LOG_PRIORITY_INFO, tr, format, args);
     }
 
     public static ILog i(final String tag, final Throwable tr, final String format, final Object... args) {
@@ -117,11 +116,11 @@ public class SLog {
     }
 
     public static ILog w(final String format, final Object... args) {
-        return sILog.w(format, args);
+        return logWithArgs(LOG_PRIORITY_WARN, format, args);
     }
 
     public static ILog w(final Throwable tr, final String format, final Object... args) {
-        return sILog.w(tr, format, args);
+        return logWithThrowable(LOG_PRIORITY_WARN, tr, format, args);
     }
 
     public static ILog w(final String tag, final Throwable tr, final String format, final Object... args) {
@@ -129,11 +128,11 @@ public class SLog {
     }
 
     public static ILog e(final String format, final Object... args) {
-        return sILog.e(format, args);
+        return logWithArgs(LOG_PRIORITY_ERROR, format, args);
     }
 
     public static ILog e(final Throwable tr, final String format, final Object... args) {
-        return sILog.e(tr, format, args);
+        return logWithThrowable(LOG_PRIORITY_ERROR, tr, format, args);
     }
 
     public static ILog e(final String tag, final Throwable tr, final String format, final Object... args) {
@@ -141,11 +140,11 @@ public class SLog {
     }
 
     public static ILog wtf(final String format, final Object... args) {
-        return sILog.wtf(format, args);
+        return logWithArgs(LOG_PRIORITY_ASSERT, format, args);
     }
 
     public static ILog wtf(final Throwable tr, final String format, final Object... args) {
-        return sILog.wtf(tr, format, args);
+        return logWithThrowable(LOG_PRIORITY_ASSERT, tr, format, args);
     }
 
     public static ILog wtf(final String tag, final Throwable tr, final String format, final Object... args) {
@@ -168,4 +167,41 @@ public class SLog {
         return sILog.json(tag, json);
     }
 
+    private static ILog logWithArgs(final int priority, String format, Object... args) {
+        switch (priority) {
+            case LOG_PRIORITY_VERBOSE:
+                return sILog.v(format, args);
+            case LOG_PRIORITY_DEBUG:
+                return sILog.d(format, args);
+            case LOG_PRIORITY_INFO:
+                return sILog.i(format, args);
+            case LOG_PRIORITY_WARN:
+                return sILog.w(format, args);
+            case LOG_PRIORITY_ERROR:
+                return sILog.e(format, args);
+            case LOG_PRIORITY_ASSERT:
+                return sILog.wtf(format, args);
+            default:
+                return sILog;
+        }
+    }
+
+    private static ILog logWithThrowable(final int priority, Throwable tr, String format, Object... args) {
+        switch (priority) {
+            case LOG_PRIORITY_VERBOSE:
+                return sILog.v(tr, format, args);
+            case LOG_PRIORITY_DEBUG:
+                return sILog.d(tr, format, args);
+            case LOG_PRIORITY_INFO:
+                return sILog.i(tr, format, args);
+            case LOG_PRIORITY_WARN:
+                return sILog.w(tr, format, args);
+            case LOG_PRIORITY_ERROR:
+                return sILog.e(tr, format, args);
+            case LOG_PRIORITY_ASSERT:
+                return sILog.wtf(tr, format, args);
+            default:
+                return sILog;
+        }
+    }
 }

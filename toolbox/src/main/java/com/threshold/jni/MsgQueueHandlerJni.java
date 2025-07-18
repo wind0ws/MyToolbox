@@ -7,8 +7,8 @@ import com.threshold.toolbox.log.LogTag;
 import com.threshold.toolbox.log.SLog;
 
 import java.io.Closeable;
-import java.io.IOException;
 
+@SuppressWarnings("unused")
 @LogTag("MsgQJni")
 public class MsgQueueHandlerJni {
 
@@ -189,7 +189,8 @@ public class MsgQueueHandlerJni {
     private static native int init(long[] handleHolder, MsgQueueHandlerParam initParam);
 
     /**
-     * feed msg to queue
+     * feed msg to queue.
+     * you should protect it. call this synchronized.
      *
      * @param handle handle
      * @param what   what

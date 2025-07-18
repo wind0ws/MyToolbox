@@ -1,6 +1,7 @@
 *.iml
 .gradle
 .idea/
+.vscode/
 misc.xml
 deploymentTargetDropDown.xml
 local.properties

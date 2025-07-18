@@ -80,6 +80,10 @@ Java_com_threshold_jni_MsgQueueHandlerJni_init(JNIEnv *env, jclass clazz,
                                                jobject _init_param) {
     (void) clazz;
     jint ret = -1;
+    if (NULL == _handle_holder || NULL == _init_param) {
+        LOGE_TRACE("null param!");
+        return -1;
+    }
 
     jlong *handle_holder = (*env)->GetLongArrayElements(env, _handle_holder, NULL);
     handle_holder[0] = 0;
@@ -166,29 +170,31 @@ Java_com_threshold_jni_MsgQueueHandlerJni_init(JNIEnv *env, jclass clazz,
 }
 
 JNIEXPORT jint JNICALL
-Java_com_threshold_jni_MsgQueueHandlerJni_feedMsg(JNIEnv *env, jclass clazz,
-                                                  jlong _handle, jint _what, jint _arg1, jint _arg2,
+Java_com_threshold_jni_MsgQueueHandlerJni_feedMsg(JNIEnv *env, jclass clazz, jlong _handle,
+                                                  jint _what, jint _arg1, jint _arg2,
                                                   jbyteArray _obj, jint _obj_len) {
     (void) clazz;
     msg_q_code_e msg_push_status = MSG_Q_CODE_GENERIC_FAIL;
     msg_queue_jni_context_t *context = LONG64_TO_PTR(_handle);
-    if (!context) {
+    if (NULL == context) {
+        LOGE_TRACE("null handle!");
         return -1;
     }
     if (context->flag_exit) {
-        LOGE_TRACE("you can't feedMsg anymore, because now is going to destroy!");
+        LOGE_TRACE("you can't feedMsg anymore(and you shouldn't call this anymore), "
+                   "because now is going to destroy engine!");
         return -2;
     }
 
-    jbyteArray j_obj_array = _obj;
     bool valid_msg = false;
+    jbyteArray j_obj_array = _obj;
     int obj_len = _obj_len;
     do {
         if (NULL == j_obj_array || 0 == obj_len) {
             valid_msg = true;
             break;
         }
-#if 0
+#if 0 // check user current jbyteArray capacity.
         jsize obj_capacity = (*env)->GetArrayLength(env, j_obj_array);
         if ((int)obj_capacity < obj_len) {
             abort();
@@ -196,7 +202,7 @@ Java_com_threshold_jni_MsgQueueHandlerJni_feedMsg(JNIEnv *env, jclass clazz,
         }
 #endif
         if (obj_len < 1) {
-            LOGE("invalid obj_len=%d", obj_len);
+            LOGE_TRACE("invalid obj_len=%d. check your param.", obj_len);
             break;
         }
         if (obj_len > (int) (context->msg.in_obj_capacity)) {
@@ -207,10 +213,18 @@ Java_com_threshold_jni_MsgQueueHandlerJni_feedMsg(JNIEnv *env, jclass clazz,
         memcpy(&(context->msg.in->obj[0]), obj_bytes, (size_t) obj_len);
         (*env)->ReleaseByteArrayElements(env, j_obj_array, obj_bytes, 0);
     } while (0);
-    context->msg.in->what = _what;
-    context->msg.in->arg1 = _arg1;
-    context->msg.in->arg2 = _arg2;
-    context->msg.in->obj_len = obj_len;
+
+    // assemble queue_msg data.
+    do {
+        if (NULL == context->msg.in) {
+            LOGE_TRACE("screw up! failed on create queue_msg. which it is on \"context->msg.in\"");
+            break;
+        }
+        context->msg.in->what = _what;
+        context->msg.in->arg1 = _arg1;
+        context->msg.in->arg2 = _arg2;
+        context->msg.in->obj_len = obj_len;
+    } while (0);
 
 //        LOGV("--> try push");
 #define MAX_PUSH_RETRY_COUNT 4U
@@ -225,13 +239,14 @@ Java_com_threshold_jni_MsgQueueHandlerJni_feedMsg(JNIEnv *env, jclass clazz,
             break;
         }
         if (MSG_Q_CODE_FULL != msg_push_status) {
-            LOGE("failed(%d) on push msg", msg_push_status);
+            LOGE("failed(%d) on push msg, "
+                 "you must handle this situation carefully!", msg_push_status);
             break;
         }
-        usleep(10U * 1000U); // <-- full, wait a moment and retry.
+        usleep(10U * 1000U); // <-- queue full, wait a moment and retry push again.
     } while (++retry_count < MAX_PUSH_RETRY_COUNT);
     if (MSG_Q_CODE_SUCCESS != msg_push_status && 0 != retry_count) {
-        LOGE_TRACE("failed(%d) on push after retry_count:%u", msg_push_status, retry_count);
+        LOGE_TRACE("failed(%d) on push msg after retry_count:%u", msg_push_status, retry_count);
     }
 //        LOGV("<-- push finished with status: %d", msg_push_status);
 
@@ -244,6 +259,9 @@ Java_com_threshold_jni_MsgQueueHandlerJni_destroy(JNIEnv *env, jclass clazz,
                                                   jlongArray _handle_holder) {
     (void) clazz;
     int ret;
+    if (NULL == _handle_holder) {
+        return -1;
+    }
 
     LOGD(" --> destroy in...");
     jlong *handle_holder = (*env)->GetLongArrayElements(env, _handle_holder, NULL);
@@ -265,13 +283,14 @@ static void pri_on_msg_q_handler_status_changed(msg_q_handler_status_e status, v
             // get env and attach to this thread once.
             LOGI("detected msg_queue_handler status: READY_TO_GO, now try attach it.");
             ASSERT_ABORT(NULL == context->cb_data.env);
-            int env_status = (*(context->cb_data.jvm))->GetEnv(
+            jint attach_status = (*(context->cb_data.jvm))->GetEnv(
                     context->cb_data.jvm, (void **) &(context->cb_data.env), JNI_VERSION_1_6);
-            if (env_status < 0) {
-                env_status = (*(context->cb_data.jvm))->AttachCurrentThread(
+            if (attach_status < 0) {
+                attach_status = (*(context->cb_data.jvm))->AttachCurrentThread(
                         context->cb_data.jvm, &(context->cb_data.env), NULL);
-                if (env_status < 0) {
-                    LOGE_TRACE("oops: vm->AttachCurrentThread error(%d). ", env_status);
+                if (JNI_OK != attach_status) {
+                    LOGE_TRACE("screw up. failed(%d) on vm->AttachCurrentThread",
+                               (int) attach_status);
                     break;
                 }
                 context->cb_data.attached_thread = true;
@@ -286,7 +305,13 @@ static void pri_on_msg_q_handler_status_changed(msg_q_handler_status_e status, v
                 break;
             }
             LOGI_TRACE(" now call vm->DetachCurrentThread");
-            (*(context->cb_data.jvm))->DetachCurrentThread(context->cb_data.jvm);
+            jint detach_status = JNI_ERR;
+            if (JNI_OK == (detach_status = (*(context->cb_data.jvm))->DetachCurrentThread(
+                    context->cb_data.jvm))) {
+                LOGI_TRACE(" succeed vm->DetachCurrentThread");
+            } else {
+                LOGE_TRACE(" failed(%d) on vm->DetachCurrentThread", (int) detach_status);
+            }
             context->cb_data.env = NULL; // <-- env get it from jvm, now dereference it.
             context->cb_data.attached_thread = false;
         }
@@ -350,9 +375,13 @@ static void pri_recreate_jobj_cache(JNIEnv *env,
         return;
     }
     LOGI("recreate new jobj.cache, capacity=%d", new_obj_capacity);
-    context->cache.obj_capacity = new_obj_capacity;
     jbyteArray msg_obj_array = (*env)->NewByteArray(env, new_obj_capacity);
+    if (NULL == msg_obj_array) {
+        LOGE_TRACE("failed on alloc NewByteArray(%d)", (int) new_obj_capacity);
+        return;
+    }
     context->cache.j_obj = (*env)->NewGlobalRef(env, msg_obj_array);
+    context->cache.obj_capacity = new_obj_capacity;
 }
 
 static int pri_destroy_jni_context(JNIEnv *env, msg_queue_jni_context_t *context) {

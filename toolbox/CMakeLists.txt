@@ -33,7 +33,8 @@ add_library( # Sets the name of the library.
         src/main/cpp/jni_toolbox.c
         src/main/cpp/jni_ring_buffer.c
         src/main/cpp/jni_msg_queue_handler.c
-        src/main/cpp/jni_assets.c)
+        src/main/cpp/jni_assets.c
+        src/main/cpp/jni_io_helper.c)
 
 # Specifies a path to native header files.
 include_directories(src/main/cpp/

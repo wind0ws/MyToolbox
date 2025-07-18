@@ -23,17 +23,17 @@ public class AssetsUtilTest {
     public void testCopyAssets() throws IOException {
         // Context of the app under test.
         final Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        SLog.d("Start copy.");
+        SLog.d("--> Start copy.");
 
-        boolean succeed = AssetsUtil.copyAssetFile(appContext.getAssets(),
+        boolean succeed = AssetsUtil.copyAssetFile(appContext, AssetsUtil.CopyMode.OVERRIDE_IF_MODIFIED,
                 "bundles/sub_dir/test.txt",
                 "/sdcard/Download/test.txt");
-        succeed &= AssetsUtil.copyAssetFolder(appContext.getAssets(),
+        succeed &= AssetsUtil.copyAssetFolder(appContext,AssetsUtil.CopyMode.OVERRIDE_IF_MODIFIED,
                 "bundles",
                 "/sdcard/Download/asset_test/");
         Assert.assertTrue(succeed);
 
-        SLog.d("Copy complete.");
+        SLog.d("<-- Copy complete.");
     }
 
 }

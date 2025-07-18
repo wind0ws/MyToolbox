@@ -39,7 +39,6 @@ class StackTraceLogger implements StackTraceLog,Printer {
     private static final String BOTTOM_BORDER = BOTTOM_LEFT_CORNER + DOUBLE_DIVIDER + DOUBLE_DIVIDER;
     private static final String MIDDLE_BORDER = MIDDLE_CORNER + SINGLE_DIVIDER + SINGLE_DIVIDER;
 
-    private final TagFinderCache mTagFinderCache = new TagFinderCache();
     private final Printer mLogPrinter;
     private final String LINE_SEPARATOR;
 
@@ -337,7 +336,7 @@ class StackTraceLogger implements StackTraceLog,Printer {
 
         if (lineNumber < 0) {
             // no source. maybe minifyEnabled, now we try to search TAG filed in class
-            final String tagFoundFromCache = mTagFinderCache.findTag(className);
+            final String tagFoundFromCache = TagFinder.findTag(className);
             // if tag cache is "", it represent that we searched TAG before, but no TAG found in class.
             if (!TextUtil.isEmpty(tagFoundFromCache)) {
                 tag = tagFoundFromCache;

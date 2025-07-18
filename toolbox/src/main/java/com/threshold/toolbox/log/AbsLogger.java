@@ -4,9 +4,6 @@ import androidx.annotation.Nullable;
 
 import static com.threshold.toolbox.log.LogPriority.*;
 
-/**
- * a abstract logger which implement ILog interface
- */
 public abstract class AbsLogger implements ILog {
 
     private final ThreadLocal<String> mDefaultLogTag = new ThreadLocal<>();
@@ -20,6 +17,16 @@ public abstract class AbsLogger implements ILog {
         mDefaultLogTag.set(defaultTag);
         return this;
     }
+
+    protected String currentLogTag() {
+        return mDefaultLogTag.get();
+    }
+
+    protected abstract ILog log(int methodOffset, int logPriority, String tag, @Nullable Throwable tr, String format, Object... args);
+
+    protected abstract ILog logObj(final int methodOffset, final String tag, final Object obj);
+
+    protected abstract ILog logJson(final int methodOffset, final String tag, final String json);
 
     @Override
     public ILog d(final String format, final Object... args) {
@@ -130,17 +137,6 @@ public abstract class AbsLogger implements ILog {
     public ILog json(final String json) {
         return logJson(0, currentLogTag(), json);
     }
-
-    protected String currentLogTag() {
-        return mDefaultLogTag.get();
-    }
-
-    protected abstract ILog log(final int methodOffset, @LogPriority final int logLevel, final String tag,
-                                final Throwable tr, final String format, final Object... args);
-
-    protected abstract ILog logObj(final int methodOffset, final String tag, final Object obj);
-
-    protected abstract ILog logJson(final int methodOffset, final String tag, final String json);
 
 }
 

@@ -12,7 +12,6 @@ public class LogcatLogger extends AbsLogger {
 
     private final Printer mLogPrinter;
     private final int mStackTraceOffset;
-    private final TagFinderCache mTagFinderCache = new TagFinderCache();
 
     public LogcatLogger(@Nullable final String logTag,
                         final int methodOffset, @NonNull final Printer printer) {
@@ -26,11 +25,10 @@ public class LogcatLogger extends AbsLogger {
         String currentTag = super.currentLogTag();
         if (TextUtils.isEmpty(currentTag)) {
             final StackTraceElement traceElement = TraceUtil.getStackTrace(mStackTraceOffset);
-            final String targetClzName = traceElement.getClassName();
-            currentTag = mTagFinderCache.findTag(targetClzName);
-        }
-        if (TextUtils.isEmpty(currentTag)) {
-            currentTag = "NO_TAG";
+            currentTag = TagFinder.findTag(traceElement);
+            if (TextUtils.isEmpty(currentTag)) {
+                currentTag = "NO_TAG";
+            }
         }
         return currentTag;
     }
@@ -41,7 +39,7 @@ public class LogcatLogger extends AbsLogger {
                        final String format, final Object... args) {
         if (mLogPrinter.isPrintable(logLevel, tag)) {
             String msg = (args == null || args.length == 0) ? format : String.format(format, args);
-            if (tr != null) {
+            if (null != tr) {
                 msg += String.format("\noccurred throwable:\n%s", Log.getStackTraceString(tr));
             }
             mLogPrinter.print(logLevel, tag, msg);

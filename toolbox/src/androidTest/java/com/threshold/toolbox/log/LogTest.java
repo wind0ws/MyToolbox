@@ -18,8 +18,8 @@ public class LogTest {
         static {
             sLog = LoggerFactory.create(LoggerFactory.LOG_STRATEGY_WITH_TRACE,
                     null, 0,
-                    new SimpleDiskPrinter(new File("/sdcard/log_test.log"),
-                            0, new LogcatPrinter(), true));
+                    new SimpleDiskPrinter(new File("/sdcard/Download/log_test.log"),
+                            8192, new LogcatPrinter(), true));
 //            sLog = new TracerLogger();
         }
 
