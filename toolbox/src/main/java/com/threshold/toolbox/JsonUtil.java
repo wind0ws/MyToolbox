@@ -19,7 +19,7 @@ public class JsonUtil {
         try {
             return jsonObject.opt(key);
         } catch (Exception e) {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         }
         return null;
     }
@@ -28,13 +28,13 @@ public class JsonUtil {
     public static Object opt(@NonNull final JSONObject jsonObject,
                              @NonNull final String key, @NonNull final Object defaultObj) {
         try {
-            Object obj = jsonObject.opt(key);
+            final Object obj = jsonObject.opt(key);
             if (null == obj) {
                 return defaultObj;
             }
             return obj;
         } catch (Exception e) {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
             return defaultObj;
         }
     }
@@ -45,10 +45,10 @@ public class JsonUtil {
             return null;
         }
         try {
-            JSONObject jsonObject = new JSONObject(json);
+            final JSONObject jsonObject = new JSONObject(json);
             return opt(jsonObject, key);
         } catch (JSONException e) {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         }
         return null;
     }
@@ -58,7 +58,7 @@ public class JsonUtil {
         try {
             return optString(new JSONObject(json), key, defaultVal);
         } catch (JSONException e) {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         }
         return defaultVal;
     }
@@ -78,14 +78,14 @@ public class JsonUtil {
     }
 
     public static int optInt(@NonNull final JSONObject jsonObject,
-                             @NonNull final String key, @NonNull final int defaultVal) {
+                             @NonNull final String key, final int defaultVal) {
         final String numStr = optString(jsonObject, key, "");
         int ret = defaultVal;
         if (TextUtils.isEmpty(numStr)) {
             try {
                 ret = Integer.parseInt(numStr);
             } catch (NumberFormatException e) {
-                e.printStackTrace();
+                e.printStackTrace(System.err);
             }
         }
         return ret;

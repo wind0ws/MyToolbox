@@ -28,39 +28,29 @@ Java_com_threshold_jni_RingBufferJni_create(JNIEnv *env, jclass clazz,
 
 JNIEXPORT jint JNICALL
 Java_com_threshold_jni_RingBufferJni_availableRead(JNIEnv *env, jclass clazz,
-                                                   jlong _handle,
-                                                   jintArray _data_len_holder) {
+                                                   jlong _handle) {
     ring_buffer_handle handle = LONG64_TO_PTR(_handle);
 
-    jint *data_len_holder = (*env)->GetIntArrayElements(env, _data_len_holder, NULL);
-    data_len_holder[0] = (jint) RingBuffer_available_read(handle);
-
-    (*env)->ReleaseIntArrayElements(env, _data_len_holder, data_len_holder, 0);
-    return 0;
+    uint32_t len = (jint) RingBuffer_available_read(handle);
+    return (jint) len;
 }
 
 JNIEXPORT jint JNICALL
 Java_com_threshold_jni_RingBufferJni_availableWrite(JNIEnv *env, jclass clazz,
-                                                    jlong _handle,
-                                                    jintArray _data_len_holder) {
+                                                    jlong _handle) {
     ring_buffer_handle handle = LONG64_TO_PTR(_handle);
 
-    jint *data_len_holder = (*env)->GetIntArrayElements(env, _data_len_holder, NULL);
-    data_len_holder[0] = (jint) RingBuffer_available_write(handle);
-
-    (*env)->ReleaseIntArrayElements(env, _data_len_holder, data_len_holder, 0);
-    return 0;
+    uint32_t len = (jint) RingBuffer_available_write(handle);
+    return (jint) len;
 }
 
 JNIEXPORT jint JNICALL
 Java_com_threshold_jni_RingBufferJni_discard(JNIEnv *env, jclass clazz,
-                                             jlong _handle,
-                                             jint _len) {
+                                             jlong _handle, jint _len) {
     ring_buffer_handle handle = LONG64_TO_PTR(_handle);
 
     uint32_t len = (uint32_t) _len;
     len = RingBuffer_discard(handle, len);
-
     return (jint) len;
 }
 

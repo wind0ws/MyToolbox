@@ -14,26 +14,26 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Simple permission controller, help you request app permission from user.
- *
- * simple usage:
+ * <p>
+ * simple usage: <p>
  * <code>
  * public class MainActivity extends AppCompatActivity implements View.OnClickListener {
- *
+ * <p>
  *     private PermissionManager mPermissionManager;
- *
+ * <p>
  *     //@Override
- *     protected void onCreate(@Nullable Bundle savedInstanceState) {
+ * <p>    protected void onCreate(@Nullable Bundle savedInstanceState) {
  *         super.onCreate(savedInstanceState);
  *         setContentView(R.layout.activity_main);
  *         findViewById(R.id.btn2).setOnClickListener(this);
- *
+ * <p>
  *         mPermissionController = new PermissionController(new PermissionController.OnPermissionChangedListener() {
- *             //@Override
+ * <p>        //@Override
  *             public void onAllPermissionGranted() {
  *                 Log.i(TAG, "all permission got! you can do something with permission");
  *             }
- *
- *             //@Override
+ * <p>
+ * <p>         //@Override
  *             public void onSomePermissionPermanentlyDenied() {
  *                 Log.e(TAG, "some permission permanently denied. exit...");
  *                 ToastUtil.showLong(getApplicationContext(), "you denied some permission, app cannot work properly");
@@ -42,8 +42,8 @@ import org.jetbrains.annotations.Nullable;
  *         });
  *         mPermissionController.checkAndRequestPermission(this); // do permission check
  *     }
- *
- *     //@Override
+ * <p>
+ * <p>    //@Override
  *     public void onClick(View v) {
  *         if (!mPermissionController.isAllPermissionGranted()) {
  *             ToastUtil.showLongImmediately(getApplicationContext(),
@@ -51,11 +51,12 @@ import org.jetbrains.annotations.Nullable;
  *             return;
  *         }
  *     }
- *
+ * <p>
  * }
  * </code>
  *
  */
+@SuppressWarnings("unused")
 public class PermissionController {
 
     private static final String TAG = "PermissionController";

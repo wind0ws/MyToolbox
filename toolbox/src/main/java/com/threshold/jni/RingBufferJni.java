@@ -21,20 +21,18 @@ public class RingBufferJni {
     /**
      * available read data len from ring
      *
-     * @param handle          handle
-     * @param data_len_holder int array for receive data len
-     * @return 0 for success
+     * @param handle handle
+     * @return available data len
      */
-    public static native int availableRead(long handle, int[] data_len_holder);
+    public static native int availableRead(long handle);
 
     /**
      * available write len to ring. (free space to write)
      *
-     * @param handle          handle
-     * @param data_len_holder int array for receive free space
-     * @return 0 for success
+     * @param handle handle
+     * @return available write len
      */
-    public static native int availableWrite(long handle, int[] data_len_holder);
+    public static native int availableWrite(long handle);
 
     /**
      * discard specified len data from ring buffer.

@@ -19,7 +19,7 @@ public class RingBufferTest {
     }
 
     @Test
-    public void test() throws InterruptedException {
+    public void testRingBuffer() throws InterruptedException {
         final RingBuffer ringBuffer = new RingBuffer(1024);
         Assert.assertEquals(ringBuffer.availableReadLen(), 0);
         LLog.i("ringBuffer.availableWriteLen()=%d", ringBuffer.availableWriteLen());

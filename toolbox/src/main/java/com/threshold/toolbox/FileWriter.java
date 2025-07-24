@@ -6,71 +6,107 @@ import java.io.*;
 public class FileWriter extends OutputStream {
 
     private static final String TAG = "FileWriter";
-    private OutputStream mOutputStream;
+    private static final int DEFAULT_BUFFER_SIZE = 8192; // 8KB
 
-    public FileWriter(final File file, final int bufferSize) {
+    private OutputStream mOutputStream;
+    private boolean mHasError;
+    private boolean mClosed;
+
+    public FileWriter(final File file, final int bufferSize) throws FileNotFoundException {
+        if (file == null) {
+            throw new NullPointerException("File cannot be null");
+        }
+        final int actualBufferSize = bufferSize > 0 ? bufferSize : DEFAULT_BUFFER_SIZE;
         try {
-            if (bufferSize < 4096) {
-                mOutputStream = new FileOutputStream(file);
-            } else {
-                mOutputStream = new BufferedOutputStream(new FileOutputStream(file), bufferSize);
-            }
+            mOutputStream = new BufferedOutputStream(
+                    new FileOutputStream(file), actualBufferSize);
         } catch (FileNotFoundException ex) {
-            Log.e(TAG, "error on create OutputStream", ex);
-            throw new RuntimeException(file + " not found", ex);
+            mHasError = true;
+            Log.e(TAG, "File not found: " + file.getAbsolutePath(), ex);
+            throw ex;
         }
     }
 
-    public FileWriter(final String path) {
+    public FileWriter(final String path) throws FileNotFoundException {
         this(new File(path), 0);
     }
 
+    private void ensureValidState() {
+        if (mClosed) {
+            throw new IllegalStateException("Stream already closed");
+        }
+        if (mHasError) {
+            throw new IllegalStateException("Stream in error state");
+        }
+    }
+
     @Override
-    public void write(final int b) {
+    public void write(final int b) throws IOException {
+        ensureValidState();
         try {
             mOutputStream.write(b);
         } catch (IOException e) {
-            Log.e(TAG, "error on write", e);
+            handleException("write(int)", e);
         }
     }
 
     @Override
-    public void write(final byte[] buffer, final int offset, int len) {
+    public void write(final byte[] buffer, final int offset, int len) throws IOException {
+        ensureValidState();
         try {
             mOutputStream.write(buffer, offset, len);
         } catch (IOException ex) {
-            Log.e(TAG, "error on write", ex);
+            handleException("write(byte[])", ex);
         }
     }
 
     @Override
-    public void write(final byte[] buffer) {
+    public void write(final byte[] buffer) throws IOException {
         write(buffer, 0, buffer.length);
     }
 
     @Override
-    public void flush() {
-        if (mOutputStream == null) {
+    public void flush() throws IOException {
+        if (mClosed || mHasError || mOutputStream == null) {
             return;
         }
         try {
             mOutputStream.flush();
         } catch (IOException ex) {
-            Log.e(TAG, "error on flush", ex);
+            handleException("flush", ex);
+        }
+    }
+
+    private void handleException(String operation, IOException ex) throws IOException {
+        mHasError = true;
+        Log.e(TAG, "Error during " + operation + ": " + ex.getMessage(), ex);
+        safeClose();
+        throw ex;
+    }
+
+    private void safeClose() {
+        try {
+            if (mOutputStream != null) {
+                mOutputStream.close();
+            }
+        } catch (IOException e) {
+            Log.w(TAG, "Error closing stream: " + e.getMessage());
+        } finally {
+            mOutputStream = null;
         }
     }
 
     @Override
     public void close() {
-        if (mOutputStream == null) {
+        if (mClosed) {
             return;
         }
+        mClosed = true;
         try {
-            mOutputStream.close();
-        } catch (IOException ex) {
-            Log.e(TAG, "error on close", ex);
+            flush();
+        } catch (Exception e) {
+            Log.w(TAG, "Error flushing before close", e);
         }
-        mOutputStream = null;
+        safeClose();
     }
-
 }

@@ -19,6 +19,7 @@ public class MsgQueueHandlerJni {
     /**
      * Helper for operate with MsgQueueHandlerJni
      */
+    @LogTag("MsgQJniHelper")
     public static class Helper implements Closeable {
         public static final int CODE_SUCCESS = 0;
         public static final int CODE_GENERAL_FAIL = 1;
@@ -29,7 +30,7 @@ public class MsgQueueHandlerJni {
         public Helper(final MsgQueueHandlerParam handlerParam) {
             int ret;
             if (0 != (ret = MsgQueueHandlerJni.init(mHandleHolder, handlerParam))) {
-                throw new IllegalArgumentException("invalid param of MsgQueueHandlerJni.init: " + ret);
+                throw new IllegalArgumentException("invalid MsgQueueHandlerParam for MsgQueueHandlerJni.init: " + ret);
             }
             SLog.i("succeed create MsgQueueHandlerJni(%d)", mHandleHolder[0]);
         }
@@ -94,6 +95,7 @@ public class MsgQueueHandlerJni {
     /**
      * for encapsulate msg data
      */
+    @Keep
     public static class MsgQueueData {
         public int what;
         public int arg1;
@@ -138,12 +140,13 @@ public class MsgQueueHandlerJni {
 
     @Keep
     @SuppressWarnings("all")
+    @LogTag("MsgQueueHandlerParam")
     public static class MsgQueueHandlerParam {
         // version that communicate with jni.
         //   this should as same as JNI_PROTOCOL_VER in jni_msg_queue_handler.c
         private static final int JNI_PROTOCOL_VER = 0;
 
-        // jni will read this variable.
+        // jni will read this variable. DO NOT rename or obfuscure it!
         private int protocolVer = JNI_PROTOCOL_VER;
         private int bufSize = 8192;
         private final String callbackFunction = "handleEvent";
@@ -155,11 +158,11 @@ public class MsgQueueHandlerJni {
          * @param bufSize  msg queue total mem size.
          * @param listener handle each msg in queue.
          */
-        public MsgQueueHandlerParam(final int bufSize, OnReceiveMsgListener listener) {
+        public MsgQueueHandlerParam(final int bufSize, final OnReceiveMsgListener listener) {
             if (bufSize < 4096) {
                 SLog.w("maybe bufSize(%d) is too small, " +
-                        "if you feed large msg, maybe you will failed of feedMsg " +
-                        "on first time, that is horrible. consider increase the bufSize.", bufSize);
+                        "if you feed large msg, you may failed on feedMsg " +
+                        "in first time, that is horrible. consider increase the bufSize.", bufSize);
             }
             if (null == listener) {
                 throw new IllegalArgumentException("must provide valid listener!");
@@ -168,7 +171,7 @@ public class MsgQueueHandlerJni {
             this.listener = listener;
         }
 
-        // handle jni callback. do NOT delete or obfuscure it!
+        // handle jni callback. DO NOT rename or obfuscure it!
         @Keep
         public int handleEvent(int what, int arg1, int arg2, byte[] obj, int objLen) {
 //            SLog.i("received event. what=%d, arg1=%d, arg2=%d, obj_len=%d",

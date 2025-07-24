@@ -1,64 +1,101 @@
 package com.threshold.toolbox;
 
+import androidx.annotation.NonNull;
 import android.os.*;
 import android.util.Log;
-
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.OutputStream;
 
 public class AsyncFileWriter extends OutputStream {
 
     private static final String TAG = "AsyncFileWriter";
+    private static final int MIN_BUFFER_SIZE = 4096;
+    private static final int DEFAULT_CHUNK_SIZE = 8192;
+
+    public interface ErrorCallback {
+        void onError(String operation, Exception ex);
+    }
 
     private final RingBuffer mRingBuf;
     private final FileWriterWorker mFileWriterWorker;
-    private byte[] mIntBuf = null;
+    private final byte[] mSingleByteBuf = new byte[1];
+    private volatile boolean mClosed;
+    private ErrorCallback mErrorCallback;
 
     public AsyncFileWriter(final File file, final int bufferSize) {
-        if (null == file || bufferSize < 4096) {
-            throw new IllegalArgumentException(String.format("file is null or bufferSize=%d " +
-                    "too small(at least 4096)", bufferSize));
+        this(file, bufferSize, null);
+    }
+
+    public AsyncFileWriter(final File file, final int bufferSize, final ErrorCallback callback) {
+        if (file == null) {
+            throw new IllegalArgumentException("File cannot be null");
         }
+        if (bufferSize < MIN_BUFFER_SIZE) {
+            throw new IllegalArgumentException("Buffer size too small (min " +
+                    MIN_BUFFER_SIZE + " bytes)");
+        }
+        mErrorCallback = callback;
         mRingBuf = new RingBuffer(bufferSize);
-        mFileWriterWorker = new FileWriterWorker(file, bufferSize / 8, mRingBuf);
+        mFileWriterWorker = new FileWriterWorker(file, DEFAULT_CHUNK_SIZE, mRingBuf);
+    }
+
+    public void setErrorCallback(ErrorCallback callback) {
+        mErrorCallback = callback;
     }
 
     private void checkCloseStatus() {
-        if (mFileWriterWorker.isClosed()) {
-            throw new IllegalStateException("AsyncFileWriter is already closed");
+        if (mClosed) {
+            throw new IllegalStateException("AsyncFileWriter is closed");
         }
     }
 
     @Override
-    public void write(final int b) {
+    public void write(final int b) throws IOException {
         checkCloseStatus();
-        if (null == mIntBuf) {
-            mIntBuf = new byte[4];
-        }
-        ByteUtil.intToLittleEndianBytes(b, mIntBuf, 0);
-        write(mIntBuf, 0, 4);// int have 4 byte.
+        mSingleByteBuf[0] = (byte) b;
+        write(mSingleByteBuf, 0, 1);
     }
 
     @Override
-    public void write(final byte[] data, final int offset, final int len) {
+    public void write(final byte[] data, final int offset, final int len) throws IOException {
         checkCloseStatus();
-        if (mRingBuf.availableWriteLen() < len) {
-            Log.w(TAG, "Performance Warning: i/o can't catch your output data speed");
-            final byte[] dataCpy = new byte[len];
-            System.arraycopy(data, offset, dataCpy, 0, len);
-            mFileWriterWorker.sendWriteDataMsg(dataCpy, len);
-            return;
+        if (data == null) {
+            throw new NullPointerException("Data cannot be null");
         }
-        int writeLen;
-        if (len != (writeLen = mRingBuf.write(data, offset, len))) {
-            throw new RuntimeException(String.format("!bug, abnormal write, " +
-                    "expect=%d, real_write=%d", len, writeLen));
+        if (offset < 0 || len < 0 || offset + len > data.length) {
+            throw new IndexOutOfBoundsException("Invalid offset/length");
         }
-        mFileWriterWorker.sendWriteDataMsg(len);
+
+        int remaining = len;
+        int currentOffset = offset;
+
+        while (remaining > 0) {
+            final int writable = Math.min(mRingBuf.availableWriteLen(), remaining);
+            if (writable > 0) {
+                int written = mRingBuf.write(data, currentOffset, writable);
+                if (written != writable) {
+                    handleWorkerError("RingBuffer write mismatch",
+                            new IOException("RingBuffer write error"));
+                }
+                mFileWriterWorker.scheduleWrite();
+                currentOffset += written;
+                remaining -= written;
+            } else {
+                // 缓冲区满时等待并重试
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    handleWorkerError("Write interrupted", e);
+                }
+            }
+        }
     }
 
     @Override
-    public void write(final byte[] data) {
+    public void write(final byte[] data) throws IOException {
         write(data, 0, data.length);
     }
 
@@ -70,107 +107,128 @@ public class AsyncFileWriter extends OutputStream {
 
     @Override
     public void close() {
-        checkCloseStatus();
-        mIntBuf = null;
+        if (mClosed) {
+            return;
+        }
+        mClosed = true;
         mFileWriterWorker.sendCloseMsg();
     }
 
-    private static class FileWriterWorker implements Handler.Callback {
+    private void handleWorkerError(String message, Exception ex) {
+        Log.e(TAG, message, ex);
+        if (mErrorCallback != null) {
+            mErrorCallback.onError(message, ex);
+        }
+        close(); // 发生错误时自动关闭
+    }
+
+    private class FileWriterWorker implements Handler.Callback {
         private static final int MSG_WHAT_WRITE = 1;
         private static final int MSG_WHAT_FLUSH = 2;
         private static final int MSG_WHAT_CLOSE = 3;
 
         private FileWriter mFileWriter;
-        private boolean mIsClosed = false;
-        private byte[] mReadBuf = new byte[8192];
+        private volatile boolean mWorkerClosed;
+        private final byte[] mChunkBuffer;
         private final RingBuffer mRingBuf;
         private final Handler mHandler;
+        private final HandlerThread mHandlerThread;
 
-        private FileWriterWorker(File file, int bufferSize, RingBuffer ringBuf) {
-            final HandlerThread fileWriterHandlerThread = new HandlerThread("AsyncFWThr");
-            fileWriterHandlerThread.start();
-            mFileWriter = new FileWriter(file, bufferSize);
-            mRingBuf = ringBuf;
-            mHandler = new Handler(fileWriterHandlerThread.getLooper(), this);
-        }
-
-        void sendWriteDataMsg(byte[] data, int len) {
-            if (mIsClosed) {
-                return;
+        FileWriterWorker(File file, int chunkSize, RingBuffer ringBuf) {
+            mHandlerThread = new HandlerThread("AsyncFileWriter");
+            mHandlerThread.start();
+            try {
+                mFileWriter = new FileWriter(file, chunkSize);
+            } catch (FileNotFoundException e) {
+                handleWorkerError("File creation failed", e);
             }
-            mHandler.obtainMessage(MSG_WHAT_WRITE, len, 0, data).sendToTarget();
+            mRingBuf = ringBuf;
+            mChunkBuffer = new byte[chunkSize];
+            mHandler = new Handler(mHandlerThread.getLooper(), this);
         }
 
-        void sendWriteDataMsg(int len) {
-            sendWriteDataMsg(null, len);
+        void scheduleWrite() {
+            if (mWorkerClosed) return;
+            mHandler.removeMessages(MSG_WHAT_WRITE);
+            mHandler.sendEmptyMessage(MSG_WHAT_WRITE);
         }
 
         void sendFlushMsg() {
-            if (mIsClosed) {
-                return;
-            }
-            mHandler.obtainMessage(MSG_WHAT_FLUSH).sendToTarget();
+            if (mWorkerClosed) return;
+            mHandler.sendEmptyMessage(MSG_WHAT_FLUSH);
         }
 
         void sendCloseMsg() {
-            if (mIsClosed) {
-                return;
-            }
-            mIsClosed = true;
-            mHandler.obtainMessage(MSG_WHAT_CLOSE).sendToTarget();
-        }
-
-        boolean isClosed() {
-            return mIsClosed;
+            if (mWorkerClosed) return;
+            mWorkerClosed = true;
+            mHandler.sendEmptyMessage(MSG_WHAT_CLOSE);
         }
 
         @Override
-        public boolean handleMessage(final Message msg) {
-            switch (msg.what) {
-                case MSG_WHAT_WRITE: {
-                    final byte[] data = (byte[]) msg.obj;
-                    final int len = msg.arg1;
-                    if (data != null) { // <== new data coming, not from ring buffer.
-                        mFileWriter.write(data, 0, len);
+        public boolean handleMessage(@NonNull final Message msg) {
+            if (mFileWriter == null) return true;
+
+            try {
+                switch (msg.what) {
+                    case MSG_WHAT_WRITE:
+                        handleWrite();
                         break;
-                    }
-                    if (mReadBuf.length < len) {
-                        mReadBuf = new byte[len * 2]; // expand read buffer
-                    }
-                    int readLen;
-                    if (len == (readLen = mRingBuf.read(mReadBuf, 0, len))) {
-                        mFileWriter.write(mReadBuf, 0, len);
-                    } else {
-                        throw new RuntimeException(String.format("!!!bug, abnormal read from " +
-                                "ring(expect=%d, read=%d)", len, readLen));
-                    }
+                    case MSG_WHAT_FLUSH:
+                        mFileWriter.flush();
+                        break;
+                    case MSG_WHAT_CLOSE:
+                        handleClose();
+                        break;
+                    default:
+                        Log.w(TAG, "Unknown message: " + msg.what);
                 }
-                break;
-                case MSG_WHAT_FLUSH:
-                    mFileWriter.flush();
-                    break;
-                case MSG_WHAT_CLOSE:
-                    mFileWriter.close();
-                    mFileWriter = null;
-                    mRingBuf.close();
-                    try {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                            mHandler.getLooper().quitSafely();
-                        } else {
-                            mHandler.getLooper().quit();
-                        }
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                    }
-                    break;
-                default:
-                    Log.e(TAG, "unknown msg.what=" + msg.what);
-                    break;
+            } catch (Exception e) {
+                handleWorkerError("Worker operation failed", e);
             }
             return true;
         }
 
+        private void handleWrite() throws IOException {
+            int available = mRingBuf.availableReadLen();
+            if (available <= 0) return;
+
+            int toRead = Math.min(available, mChunkBuffer.length);
+            int read = mRingBuf.read(mChunkBuffer, 0, toRead);
+            if (read > 0) {
+                mFileWriter.write(mChunkBuffer, 0, read);
+            }
+
+            // 如果还有数据，再次调度写入
+            if (mRingBuf.availableReadLen() > 0) {
+                scheduleWrite();
+            }
+        }
+
+        private void handleClose() {
+            try {
+                // 写入剩余数据
+                while (mRingBuf.availableReadLen() > 0) {
+                    handleWrite();
+                }
+
+                mFileWriter.flush();
+            } catch (Exception e) {
+                handleWorkerError("Final flush failed", e);
+            } finally {
+                try {
+                    mFileWriter.close();
+                } catch (Exception e) {
+                    Log.w(TAG, "Close error: " + e.getMessage());
+                }
+                mRingBuf.close();
+
+                // 确保线程退出
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                    mHandlerThread.quitSafely();
+                } else {
+                    mHandlerThread.quit();
+                }
+            }
+        }
     }
-
-
 }

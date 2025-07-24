@@ -3,13 +3,15 @@ package com.threshold.toolbox;
 import android.os.SystemClock;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.threshold.toolbox.log.LogTag;
 import com.threshold.toolbox.log.SLog;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-
 @RunWith(AndroidJUnit4.class)
+@LogTag("MsgDispatcherTest")
 public class MessageDispatcherTest implements MessageDispatcher.EventListener {
 
     private static final String TAG = MessageDispatcherTest.class.getSimpleName();
@@ -22,17 +24,29 @@ public class MessageDispatcherTest implements MessageDispatcher.EventListener {
     public static class BEvent {
     }
 
+    @SuppressWarnings("all")
+    public static class BaseEvent {
+    }
+
+    @SuppressWarnings("all")
+    public static class DerivedEvent extends BaseEvent {
+    }
+
     @Test
-    public void test() {
+    public void testMsgDispatcher() {
         final MessageDispatcher dispatcher = MessageDispatcher.getDefault();
 
-        dispatcher.register(TAG.hashCode(), this, AEvent.class, BEvent.class);
+        boolean result = dispatcher.register(TAG.hashCode(), this,
+                AEvent.class, BEvent.class, BaseEvent.class);
+        Assert.assertTrue(result);
 
         dispatcher.post(new AEvent());
         dispatcher.post(new BEvent());
+        dispatcher.post(new DerivedEvent());
 
         SystemClock.sleep(2000);
-        dispatcher.unregister(TAG.hashCode());
+        result = dispatcher.unregister(TAG.hashCode());
+        Assert.assertTrue(result);
     }
 
     @Override
@@ -42,6 +56,8 @@ public class MessageDispatcherTest implements MessageDispatcher.EventListener {
             SLog.d("it is AEvent");
         } else if (event instanceof BEvent) {
             SLog.d("it is BEvent");
+        } else if (event instanceof BaseEvent) {
+            SLog.d("it is BaseEvent(maybe child)");
         }
     }
 }

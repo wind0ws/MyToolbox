@@ -2,6 +2,8 @@ package com.threshold.toolbox.log;
 
 import android.annotation.SuppressLint;
 import android.os.Process;
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -25,7 +27,10 @@ public class SimpleDiskPrinter implements Printer {
     private final boolean mIsAlsoOutputParent;
     private final Printer mParentPrinter;
     private final AsyncFileWriter mFileWriter;
+    private volatile boolean mFileWriterInvalid = false;
     private final int mMyPid;
+
+    private static final String TAG = "SimpleDiskPrinter";
 
     /**
      * Create a disk printer: log it to file
@@ -65,9 +70,23 @@ public class SimpleDiskPrinter implements Printer {
         if (mIsAlsoOutputParent && mParentPrinter != null) {
             mParentPrinter.print(priority, tag, message);
         }
-        mFileWriter.write(String.format("%s %d-%d/? %s/%s: %s\n", sDateFormat.format(new Date()),
-                        mMyPid, Process.myTid(), priorityString(priority), tag, message)
-                .getBytes(sDefaultCharset));
+
+        if (mFileWriterInvalid) {
+            return;
+        }
+        try {
+            mFileWriter.write(String.format("%s %d-%d/? %s/%s: %s\n", sDateFormat.format(new Date()),
+                    mMyPid, Process.myTid(), priorityString(priority),
+                    tag, message).getBytes(sDefaultCharset));
+        } catch (Exception e) {
+            Log.e(TAG, " error occurred during write log to file", e);
+            mFileWriterInvalid = true;
+            try {
+                mFileWriter.close();
+            } catch (Exception ex) {
+                // ignore
+            }
+        }
     }
 
     private static String priorityString(final int priority) {
