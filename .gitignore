@@ -1,6 +1,7 @@
 *.iml
 .gradle
 .idea/
+.kotlin/
 .vscode/
 misc.xml
 deploymentTargetDropDown.xml

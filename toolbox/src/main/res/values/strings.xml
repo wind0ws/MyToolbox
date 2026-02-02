@@ -3,4 +3,6 @@
     <string name="tip_grant_notification">please toggle "enable notification" on</string>
     <string name="tip_grant_file_manager">please toggle "enable manage file" on</string>
     <string name="tip_no_permission_exit">you denied some permissions, app can\'t work properly, now exit.</string>
+    <string name="tip_permission_required">Some permission is required for this app. Please grant the permission.</string>
+    <string name="tip_go_to_settings">Go to settings and enable permissions</string>
 </resources>

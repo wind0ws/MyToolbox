@@ -76,6 +76,7 @@ class MainActivity : AppCompatActivity(),
         })
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         SLog.i("onActivityResult: requestCode=%d, resultCode=%d", requestCode, resultCode)
         super.onActivityResult(requestCode, resultCode, data)

@@ -8,7 +8,7 @@ public class BitConverter {
 
     public static short toInt16(byte[] bytes, int offset) {
         short result = (short) ((int) bytes[offset] & 0xff);
-        result |= ((int) bytes[offset + 1] & 0xff) << 8;
+        result |= (short) (((int) bytes[offset + 1] & 0xff) << 8);
         return (short) (result & 0xffff);
     }
 
@@ -162,10 +162,4 @@ public class BitConverter {
         return buffer;
     }
 
-//    public static void main(String[] args) {
-//        long a = 123456L;
-//        byte[] b1 = getBytes(a);
-//        long b = toInt64(b1, 0);
-//        System.out.println(b);
-//    }
 }

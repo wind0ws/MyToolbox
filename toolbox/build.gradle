@@ -12,7 +12,8 @@ android {
         minSdkVersion rootProject.ext.min_sdk_version
         //noinspection OldTargetApi
         targetSdkVersion rootProject.ext.target_sdk_version
-
+        versionCode rootProject.ext.version_code
+        versionName rootProject.ext.version_name
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         ndkVersion rootProject.ext.ndk_version
         externalNativeBuild {
@@ -102,6 +103,7 @@ tasks.register('testJar', Jar) {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.annotation:annotation:+'
     testImplementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${rootProject.ext.kotlin_version}"
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.json:json:20240303'

@@ -1,6 +1,7 @@
 package com.threshold.toolbox;
 
 import android.util.Log;
+
 import java.io.*;
 
 public class FileWriter extends OutputStream {
@@ -13,8 +14,14 @@ public class FileWriter extends OutputStream {
     private boolean mClosed;
 
     public FileWriter(final File file, final int bufferSize) throws FileNotFoundException {
-        if (file == null) {
+        if (null == file) {
             throw new NullPointerException("File cannot be null");
+        }
+        final File parentFile = file.getParentFile();
+        if (null != parentFile && !parentFile.exists()) {
+            if (!parentFile.mkdirs()) {
+                Log.e(TAG, "failed on mkdirs on " + parentFile.getAbsolutePath());
+            }
         }
         final int actualBufferSize = bufferSize > 0 ? bufferSize : DEFAULT_BUFFER_SIZE;
         try {

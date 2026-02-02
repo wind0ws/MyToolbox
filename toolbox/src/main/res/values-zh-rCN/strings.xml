@@ -4,4 +4,6 @@
     <string name="tip_grant_notification">请打开 \"允许通知\" 开关</string>
     <string name="tip_grant_file_manager">请打开 \"文件管理\" 开关</string>
     <string name="tip_no_permission_exit">部分权限没有获取成功，软件即将退出...</string>
+    <string name="tip_permission_required">应用需要相关权限才能正常运行，请授予权限。</string>
+    <string name="tip_go_to_settings">请前往设置中开启权限</string>
 </resources>

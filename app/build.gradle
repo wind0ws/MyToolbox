@@ -18,8 +18,8 @@ android {
         minSdkVersion rootProject.ext.min_sdk_version
         //noinspection OldTargetApi
         targetSdkVersion rootProject.ext.target_sdk_version
-        versionCode 1
-        versionName "1.0"
+        versionCode rootProject.ext.version_code
+        versionName rootProject.ext.version_name
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         multiDexEnabled true
         ndkVersion rootProject.ext.ndk_version

@@ -1,6 +1,7 @@
 package com.threshold.jni;
 
 import androidx.annotation.Keep;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.threshold.toolbox.log.LogTag;
@@ -36,35 +37,35 @@ public class MsgQueueHandlerJni {
         }
 
         /**
-         * feed msg to queue.
+         * push msg to queue.
          * <p>
          * If you call in multiple threads, you should use locks to protect this method.
          *
-         * @param queueData data for feed to queue.
-         *                  after feedMsg done, this queueData is no need anymore,
-         *                  so you can reuse it, especially when you produce a large amount of msg.
-         * @return code of MsgQueueHandlerJni.feedMsg. 0 for success, otherwise fail. see CODE_XX
+         * @param msg msg for push to queue.
+         *            after pushMsg done, this msg is no need anymore,
+         *            so you can reuse it, especially when you produce a large amount of msg.
+         * @return code of MsgQueueHandlerJni.pushMsg. 0 for success, otherwise fail. see CODE_XX
          */
-        public int feedMsg(MsgQueueData queueData) {
+        public int pushMsg(final Message msg) {
             if (0 == mHandleHolder[0]) {
                 throw new IllegalStateException("MsgQueueHandlerJni already destroyed, " +
-                        "you can't feedMsg anymore. this obj should be discarded.");
+                        "you can't pushMsg anymore. this msg should be discarded.");
             }
-            if (null == queueData) {
-                throw new IllegalArgumentException("can't feed null data to queue");
+            if (null == msg) {
+                throw new IllegalArgumentException("can't push null msg to queue");
             }
-            if (null != queueData.obj && queueData.objLen > queueData.obj.length) {
+            if (null != msg.obj && msg.objLen > msg.obj.length) {
                 throw new IllegalArgumentException(String.format(
-                        "invalid queueData.objLen(%d), because of it is bigger than obj.length(%d)",
-                        queueData.objLen, queueData.obj.length));
+                        "invalid msg.objLen(%d), because of it is bigger than obj.length(%d)",
+                        msg.objLen, msg.obj.length));
             }
-            if (null == queueData.obj && 0 != queueData.objLen) {
+            if (null == msg.obj && 0 != msg.objLen) {
                 throw new IllegalArgumentException(String.format(
-                        "invalid queueData.objLen(%d), because of null queueData.obj",
-                        queueData.objLen));
+                        "invalid msg.objLen(%d), because of null msg.obj",
+                        msg.objLen));
             }
-            return MsgQueueHandlerJni.feedMsg(mHandleHolder[0], queueData.what,
-                    queueData.arg1, queueData.arg2, queueData.obj, queueData.objLen);
+            return MsgQueueHandlerJni.pushMsg(mHandleHolder[0], msg.what,
+                    msg.arg1, msg.arg2, msg.obj, msg.objLen);
         }
 
         @Override
@@ -91,20 +92,19 @@ public class MsgQueueHandlerJni {
 
     }
 
-
     /**
-     * for encapsulate msg data
+     * for encapsulate msg
      */
     @Keep
-    public static class MsgQueueData {
+    public static class Message {
         public int what;
         public int arg1;
         public int arg2;
         public byte[] obj = null;
         public int objLen;
 
-        public MsgQueueData(final int what, final int arg1, final int arg2,
-                            final int objLen) {
+        public Message(final int what, final int arg1, final int arg2,
+                       final int objLen) {
             this.what = what;
             this.arg1 = arg1;
             this.arg2 = arg2;
@@ -117,8 +117,20 @@ public class MsgQueueHandlerJni {
             }
         }
 
-        public MsgQueueData(final int what, final int arg1, final int arg2) {
+        public Message(final int what, final int arg1, final int arg2) {
             this(what, arg1, arg2, 0);
+        }
+
+        @NonNull
+        @Override
+        public String toString() {
+            return "Message{" +
+                    "what=" + what +
+                    ", arg1=" + arg1 +
+                    ", arg2=" + arg2 +
+//                    ", obj=" + Arrays.toString(obj) +
+                    ", objLen=" + objLen +
+                    '}';
         }
     }
 
@@ -142,13 +154,11 @@ public class MsgQueueHandlerJni {
     @SuppressWarnings("all")
     @LogTag("MsgQueueHandlerParam")
     public static class MsgQueueHandlerParam {
-        // version that communicate with jni.
+        // version that communicate with jni. DO NOT rename or obfuscure it!
         //   this should as same as JNI_PROTOCOL_VER in jni_msg_queue_handler.c
         private static final int JNI_PROTOCOL_VER = 0;
 
-        // jni will read this variable. DO NOT rename or obfuscure it!
-        private int protocolVer = JNI_PROTOCOL_VER;
-        private int bufSize = 8192;
+        private final int bufSize;
         private final String callbackFunction = "handleEvent";
         private final OnReceiveMsgListener listener;
 
@@ -160,7 +170,7 @@ public class MsgQueueHandlerJni {
          */
         public MsgQueueHandlerParam(final int bufSize, final OnReceiveMsgListener listener) {
             if (bufSize < 4096) {
-                SLog.w("maybe bufSize(%d) is too small, " +
+                SLog.w("maybe your bufSize(%d) is too small, " +
                         "if you feed large msg, you may failed on feedMsg " +
                         "in first time, that is horrible. consider increase the bufSize.", bufSize);
             }
@@ -176,7 +186,15 @@ public class MsgQueueHandlerJni {
         public int handleEvent(int what, int arg1, int arg2, byte[] obj, int objLen) {
 //            SLog.i("received event. what=%d, arg1=%d, arg2=%d, obj_len=%d",
 //                    what, arg1, arg2, objLen);
-            return listener.handleMsg(what, arg1, arg2, obj, objLen);
+            int ret = 0;
+            try {
+                ret = listener.handleMsg(what, arg1, arg2, obj, objLen);
+            } catch (Exception ex) {
+                ret = -1;
+                SLog.e(ex, "error on user.handleEvent(what=%d, arg1=%d, arg2=%d, objLen=%d)",
+                        what, arg1, arg2, objLen);
+            }
+            return ret;
         }
     }
 
@@ -192,7 +210,7 @@ public class MsgQueueHandlerJni {
     private static native int init(long[] handleHolder, MsgQueueHandlerParam initParam);
 
     /**
-     * feed msg to queue.
+     * push msg to queue.
      * you should protect it. call this synchronized.
      *
      * @param handle handle
@@ -203,7 +221,7 @@ public class MsgQueueHandlerJni {
      * @param objLen length of obj
      * @return 0 for succeed, otherwise fail
      */
-    private static native int feedMsg(long handle, int what,
+    private static native int pushMsg(long handle, int what,
                                       int arg1, int arg2, byte[] obj, int objLen);
 
     /**

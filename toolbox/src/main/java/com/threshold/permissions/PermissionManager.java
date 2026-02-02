@@ -62,8 +62,8 @@ public abstract class PermissionManager {
             return;
         }
         final Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
-        intent.addCategory("android.intent.category.DEFAULT");
-        intent.setData(Uri.parse(String.format("package:%s", activity.getApplicationContext().getPackageName())));
+        intent.addCategory(Intent.CATEGORY_DEFAULT);
+        intent.setData(Uri.parse("package:" + activity.getApplicationContext().getPackageName()));
         activity.startActivityForResult(intent, mPermissionRequestCodeForManageExternalStorage);
     }
 
@@ -85,21 +85,16 @@ public abstract class PermissionManager {
         }
 
         final List<String> listPermissionsNeeded = permissionsWillRequest(activity);
-        do {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-                break; // use normal requestPermissions solution.
-            }
-            if (!listPermissionsNeeded.contains(Manifest.permission.MANAGE_EXTERNAL_STORAGE) &&
-                    !listPermissionsNeeded.contains(Manifest.permission.WRITE_EXTERNAL_STORAGE) &&
-                    !listPermissionsNeeded.contains(Manifest.permission.READ_EXTERNAL_STORAGE)) {
-                break; // ok, you don't need any storage permission
-            }
-            if (!hasManageExternalStoragePermission(activity)) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            boolean needsStorage = listPermissionsNeeded.contains(Manifest.permission.MANAGE_EXTERNAL_STORAGE)
+                    || listPermissionsNeeded.contains(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    || listPermissionsNeeded.contains(Manifest.permission.READ_EXTERNAL_STORAGE);
+            if (needsStorage && !hasManageExternalStoragePermission(activity)) {
                 ToastUtil.showLong(activity, R.string.tip_grant_file_manager);
                 requestManageExternalStoragePermission(activity);
                 return false;
             }
-        } while (false);
+        }
 
         if (!SystemSettingUtils.isNotificationEnabled(activity)) {
             ToastUtil.showLong(activity, R.string.tip_grant_notification);
@@ -206,36 +201,25 @@ public abstract class PermissionManager {
     }
 
     public void ifCancelledAndCanRequest(final Activity activity) {
-        showDialogOK(activity,
-                "Some Permission required for this app, please grant permission for the same",
-                new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        switch (which) {
-                            case DialogInterface.BUTTON_POSITIVE:
-                                checkAndRequestPermissions(activity);
-                                break;
-                            case DialogInterface.BUTTON_NEGATIVE:
-                                // proceed with logic by disabling the related features or quit the app.
-                                break;
-                            default:
-                                break;
-                        }
+        showDialogOK(activity, activity.getString(R.string.tip_permission_required),
+                (dialog, which) -> {
+                    if (which == DialogInterface.BUTTON_POSITIVE) {
+                        checkAndRequestPermissions(activity);
                     }
                 });
     }
 
     public void ifCancelledAndCannotRequest(Activity activity) {
         Toast.makeText(activity.getApplicationContext(),
-                "Go to settings and enable permissions", Toast.LENGTH_LONG).show();
+                R.string.tip_go_to_settings, Toast.LENGTH_LONG).show();
         SystemSettingUtils.toPermissionSetting(activity);
     }
 
     private static void showDialogOK(Activity activity, String message,
                                      DialogInterface.OnClickListener clickListener) {
         new AlertDialog.Builder(activity).setMessage(message)
-                .setPositiveButton("OK", clickListener)
-                .setNegativeButton("Cancel", clickListener)
+                .setPositiveButton(android.R.string.ok, clickListener)
+                .setNegativeButton(android.R.string.cancel, clickListener)
                 .create().show();
     }
 

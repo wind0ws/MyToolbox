@@ -142,7 +142,11 @@
     public <methods>;
 }
 
--keep class com.threshold.toolbox.ByteRingBuffer{
+-keep class com.threshold.toolbox.Resample{
+    public <methods>;
+}
+
+-keep class com.threshold.toolbox.BufferWrapper{
     public <methods>;
 }
 

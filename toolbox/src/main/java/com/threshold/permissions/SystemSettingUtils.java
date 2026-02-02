@@ -9,10 +9,14 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.Settings;
+import android.util.Log;
+
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
 public class SystemSettingUtils {
+
+    private static final String TAG = "SystemSettingUtils";
 
     /**
      * is notification enabled on system
@@ -27,10 +31,8 @@ public class SystemSettingUtils {
      */
     public static void toNotificationSettings(Activity activity) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            //这种方案适用于 API 26, 即8.0（含8.0）以上可以用
             final Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
             intent.putExtra(Settings.EXTRA_APP_PACKAGE, activity.getPackageName());
-            intent.putExtra(Settings.EXTRA_CHANNEL_ID, activity.getApplicationInfo().uid);
             activity.startActivity(intent);
         } else {
             toPermissionSetting(activity);
@@ -47,7 +49,7 @@ public class SystemSettingUtils {
             try {
                 toApplicationInfo(activity);
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.w(TAG, "toApplicationInfo failed, fallback to system config", e);
                 toSystemConfig(activity);
             }
         }
@@ -71,7 +73,7 @@ public class SystemSettingUtils {
             Intent intent = new Intent(Settings.ACTION_SETTINGS);
             activity.startActivity(intent);
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.w(TAG, "toSystemConfig failed", e);
         }
     }
 

@@ -24,6 +24,10 @@ public class AsyncFileWriter extends OutputStream {
     private volatile boolean mClosed;
     private ErrorCallback mErrorCallback;
 
+    public AsyncFileWriter(final String path, final int bufferSize) {
+        this(new File(path), bufferSize, null);
+    }
+
     public AsyncFileWriter(final File file, final int bufferSize) {
         this(file, bufferSize, null);
     }

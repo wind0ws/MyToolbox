@@ -101,25 +101,26 @@ Java_com_threshold_jni_MsgQueueHandlerJni_init(JNIEnv *env, jclass clazz,
 
         (*env)->GetJavaVM(env, &(context->cb_data.jvm));
         context->cb_data.m_cls = (*env)->GetObjectClass(env, _init_param);
-        jfieldID field_id_protocol_ver =
-                (*env)->GetFieldID(env, context->cb_data.m_cls, "protocolVer", "I");
+
+        // get "JNI_PROTOCOL_VER" in java class
+        jfieldID field_id_protocol_ver = (*env)->GetStaticFieldID(env, context->cb_data.m_cls,
+                                                                  "JNI_PROTOCOL_VER", "I");
         if (NULL == field_id_protocol_ver) {
-            LOGE("can't find \"protocolVer\" in class");
+            LOGE("can't find \"JNI_PROTOCOL_VER\" in class");
             break;
         }
-        int protocol_ver = (int) ((*env)->GetIntField(env, _init_param, field_id_protocol_ver));
+        const int protocol_ver = (int) ((*env)->GetStaticIntField(env, context->cb_data.m_cls,
+                                                                  field_id_protocol_ver));
         if (JNI_PROTOCOL_VER != protocol_ver) {
-            LOGE("protocol_ver not matched: jni java class not matched with library! "
-                 "expected=%d, yours=%d",
-                 JNI_PROTOCOL_VER, protocol_ver);
+            LOGE_TRACE("JNI_PROTOCOL_VER not matched: jni=%d but java_class=%d ",
+                       JNI_PROTOCOL_VER, protocol_ver);
             break;
         }
 
-        jfieldID field_id_buf_size =
-                (*env)->GetFieldID(env, context->cb_data.m_cls, "bufSize", "I");
-        jfieldID field_id_cb_name =
-                (*env)->GetFieldID(env, context->cb_data.m_cls,
-                                   "callbackFunction", "Ljava/lang/String;");
+        jfieldID field_id_buf_size = (*env)->GetFieldID(env, context->cb_data.m_cls,
+                                                        "bufSize", "I");
+        jfieldID field_id_cb_name = (*env)->GetFieldID(env, context->cb_data.m_cls,
+                                                       "callbackFunction", "Ljava/lang/String;");
         if (NULL == field_id_buf_size || NULL == field_id_cb_name) {
             LOGE("can't find \"bufSize\" or \"callbackFunction\" in class");
             break;
@@ -170,7 +171,7 @@ Java_com_threshold_jni_MsgQueueHandlerJni_init(JNIEnv *env, jclass clazz,
 }
 
 JNIEXPORT jint JNICALL
-Java_com_threshold_jni_MsgQueueHandlerJni_feedMsg(JNIEnv *env, jclass clazz, jlong _handle,
+Java_com_threshold_jni_MsgQueueHandlerJni_pushMsg(JNIEnv *env, jclass clazz, jlong _handle,
                                                   jint _what, jint _arg1, jint _arg2,
                                                   jbyteArray _obj, jint _obj_len) {
     (void) clazz;
@@ -181,8 +182,8 @@ Java_com_threshold_jni_MsgQueueHandlerJni_feedMsg(JNIEnv *env, jclass clazz, jlo
         return -1;
     }
     if (context->flag_exit) {
-        LOGE_TRACE("you can't feedMsg anymore(and you shouldn't call this anymore), "
-                   "because now is going to destroy engine!");
+        LOGE_TRACE("you can't pushMsg anymore(and you shouldn't call this anymore), "
+                   "because now is going to destroy handler!");
         return -2;
     }
 
@@ -228,8 +229,7 @@ Java_com_threshold_jni_MsgQueueHandlerJni_feedMsg(JNIEnv *env, jclass clazz, jlo
 
 //        LOGV("--> try push");
 #define MAX_PUSH_RETRY_COUNT 4U
-    static uint32_t retry_count = 0;
-    retry_count = 0;
+    uint32_t retry_count = 0;
     do {
         if (!valid_msg) {
             break;
@@ -239,8 +239,8 @@ Java_com_threshold_jni_MsgQueueHandlerJni_feedMsg(JNIEnv *env, jclass clazz, jlo
             break;
         }
         if (MSG_Q_CODE_FULL != msg_push_status) {
-            LOGE("failed(%d) on push msg, "
-                 "you must handle this situation carefully!", msg_push_status);
+            LOGE_TRACE("failed(%d) on push msg, "
+                       "you must handle this situation carefully!", msg_push_status);
             break;
         }
         usleep(10U * 1000U); // <-- queue full, wait a moment and retry push again.

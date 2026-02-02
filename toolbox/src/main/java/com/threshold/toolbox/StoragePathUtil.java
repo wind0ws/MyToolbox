@@ -88,7 +88,7 @@ public class StoragePathUtil {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, "error on getExternalStoragePathInfo", e);
         }
         return new StoragePathInfo(sdPaths, usbPaths);
     }
@@ -178,7 +178,7 @@ public class StoragePathUtil {
                 paths.add(mountPath);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.e(TAG, "error on getExtStoragePaths", e);
         }
         return paths;
     }
@@ -195,7 +195,7 @@ public class StoragePathUtil {
             }
             return true;
         } catch (Exception ex) {
-            ex.printStackTrace();
+            Log.e(TAG, "error on canReadWrite", ex);
         }
         return false;
     }

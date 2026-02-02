@@ -4,6 +4,7 @@ import android.util.Base64;
 
 import java.io.UnsupportedEncodingException;
 
+/** @noinspection CharsetObjectCanBeUsed*/
 public class Base64Util {
 
     private static final String UTF8 = "UTF-8";

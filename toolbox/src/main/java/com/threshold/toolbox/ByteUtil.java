@@ -1,5 +1,7 @@
 package com.threshold.toolbox;
 
+import androidx.annotation.Keep;
+
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -14,49 +16,10 @@ public class ByteUtil {
         throw new IllegalStateException("no instance");
     }
 
-    /**
-     * a buffer wrapper
-     */
-    public static class BufferWrapper {
-        private final byte[] buffer;
-        // current bytes in use.
-        private int bufferUsed;
-
-        public BufferWrapper(int bufferCapacity) {
-            if (bufferCapacity < 1) {
-                throw new IllegalArgumentException("bad buffer.capacity");
-            }
-            this.buffer = new byte[bufferCapacity];
-        }
-
-        public BufferWrapper(final byte[] buffer, final int bufferUsed) {
-            this.buffer = buffer;
-            setBufferUsed(bufferUsed);
-        }
-
-        public byte[] getBuffer() {
-            return buffer;
-        }
-
-        public int getBufferUsed() {
-            return bufferUsed;
-        }
-
-        public void setBufferUsed(final int bufferUsed) {
-            if (bufferUsed > this.buffer.length) {
-                throw new IllegalArgumentException(
-                        String.format("buffer.capacity=%d, but bufferUsed=%d",
-                                this.buffer.length, bufferUsed));
-            }
-            this.bufferUsed = bufferUsed;
-        }
-    }
-
-
-    //Java 默认是大端字节序
-    //C 和编译环境有关，通常是小端字节序
+    // Java 默认是大端字节序
+    // C 和编译环境有关，通常是小端字节序
     // 这个是int转short的系数，乘以这个系数后的float强转成short即可以以16bit方式打开听。
-    // 若是想以float形式打开听，需要归一化，也就是-1 ~ 1， int需要乘2次这个系数
+    // 若是想以float形式打开听，需要归一化，也就是限制采样点范围到 -1 ~ 1， int需要乘2次这个系数
     private static final float INT2FLOAT_RATIO = 0.0000152587890625f;
 
     /**
@@ -159,6 +122,10 @@ public class ByteUtil {
 
     /**
      * 32bit signed int to 32bit short's float
+     *
+     * @param input  byte buffer
+     * @param offset byte buffer start offset
+     * @param length how many byte need to transform to short float
      */
     public static byte[] transformIntToShortFloat(byte[] input, int offset, int length) {
         final int inputSamples = length / 4; // 32 bit input,  4 bytes per sample
@@ -223,45 +190,7 @@ public class ByteUtil {
             byte[] fBytes = float2bytes(fSample);
             System.arraycopy(fBytes, 0, output, n * 4, 4);
         }
-        //return output;
     }
-
-
-//    public static byte[] transform32bitSignedPCMTo32bitFloat(byte[] input) {
-//        int inputSamples = input.length / 4; // 32 bit input,  4 bytes per sample
-////        float[] output = new float[inputSamples];
-//        byte[] floatBytes = null;
-//        try {
-//            for (int n = 0; n < inputSamples; n++) {
-//                short sample = BitConverter.toInt16(input, n * 4 + 2);//4byte, drop the first and second, keep the last two.
-//                float f = sample / 32768f;
-////            output[outputIndex++] = sample / 32768f;
-//                floatBytes = float2bytes(f);
-//            }
-//        } catch (Exception ex) {
-//            ex.printStackTrace();
-//        }
-//        if (floatBytes == null) {
-//            floatBytes = new byte[4];
-//        }
-//        return floatBytes;
-//    }
-//
-//    public static byte[] transform32bitSignedPCMTo32bitFloat(byte[] input,int offset,int length) {
-//        int inputSamples = length / 4; // 32 bit input,  4 bytes per sample
-//        ByteArrayOutputStream bos = new ByteArrayOutputStream(length);
-//        try {
-//            for (int n = 0; n < inputSamples; n++) {
-//                short sample = BitConverter.toInt16(input, offset + n * 4 + 2);//4byte, drop the first and second, keep the last two.
-//                float f = sample / 32768f;
-//                bos.write(float2bytes(f));
-//            }
-//        } catch (Exception ex) {
-//            ex.printStackTrace();
-//        }
-//        return bos.toByteArray();
-//    }
-
 
     public static short twoByte2short(byte[] bytes, int offset) {
         final ByteBuffer bb = ByteBuffer.allocate(2);
@@ -365,20 +294,20 @@ public class ByteUtil {
 
     /**
      * 降采样率
-     * <p> 输入Buffer 是 输出Buffer 的 inRate/outRate 倍</p>
+     * <p> 输入Buffer 是 输出Buffer 的 inSampleRate/outSampleRate 倍</p>
      *
-     * @param inBuffer  输入音频Buffer
-     * @param inRate    输入音频 采样率
-     * @param sampleBit 输入音频 采样大小
-     * @param outRate   输出音频 采样率
-     * @param outBuffer 输出音频Buffer
+     * @param inBuffer      输入音频 Buffer
+     * @param inSampleRate  输入音频 采样率
+     * @param inSampleBit   输入音频 采样大小
+     * @param outSampleRate 输出音频 采样率
+     * @param outBuffer     输出音频 Buffer
      */
     public static void resampleForDownRate(final BufferWrapper inBuffer, final int inChannels,
-                                           final int inRate, final int sampleBit,
-                                           final int outRate, final BufferWrapper outBuffer) {
-        final int sampleSize = sampleBit / 8;
+                                           final int inSampleRate, final int inSampleBit,
+                                           final int outSampleRate, final BufferWrapper outBuffer) {
+        final int sampleSize = inSampleBit / 8;
         //每次循环中取多少数据出来处理
-        final int stepByteLen = (inRate / outRate) * sampleSize * inChannels;
+        final int stepByteLen = (inSampleRate / outSampleRate) * sampleSize * inChannels;
         //一个采样点应该占用多少字节（包括所有声道）
         final int onePointByteLen = sampleSize * inChannels;
         int outBufferIndex = 0;

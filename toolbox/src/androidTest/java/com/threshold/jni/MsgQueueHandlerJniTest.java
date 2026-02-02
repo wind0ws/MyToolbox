@@ -1,6 +1,7 @@
 package com.threshold.jni;
 
 import android.os.SystemClock;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.threshold.toolbox.log.LogTag;
@@ -27,17 +28,17 @@ public class MsgQueueHandlerJniTest {
         int ret;
         final Random random = new Random(SystemClock.currentThreadTimeMillis());
         final MsgQueueHandlerJni.Helper msgQueueHelper = getMsgQueueHelper(random);
-        final MsgQueueHandlerJni.MsgQueueData data = new MsgQueueHandlerJni.MsgQueueData(1,2,3);
-        data.obj = new byte[2048];
-        for (int i = 0; i < data.obj.length; ++i) {
-            // generate mock data.
-            data.objLen = i;
+        final MsgQueueHandlerJni.Message msg = new MsgQueueHandlerJni.Message(1, 2, 3, 2048);
+        Assert.assertNotNull(msg.obj);
+        for (int i = 0; i < msg.obj.length; ++i) {
+            // generate mock msg.
+            msg.objLen = i;
             if (i > 0) {
-                data.arg2 = i - 1;
-                data.obj[i - 1] = (byte) i; // <-- push this on last obj byte array item content.
+                msg.arg2 = i - 1;
+                msg.obj[i - 1] = (byte) i; // <-- push this on last obj byte array item content.
             }
 
-            while (MsgQueueHandlerJni.Helper.CODE_ERROR_FULL == (ret = msgQueueHelper.feedMsg(data))) {
+            while (MsgQueueHandlerJni.Helper.CODE_ERROR_FULL == (ret = msgQueueHelper.pushMsg(msg))) {
                 SLog.w("produce msg too fast, maybe we should slower, later we will try again!");
                 SystemClock.sleep(100);
             }
@@ -60,18 +61,18 @@ public class MsgQueueHandlerJniTest {
         final MsgQueueHandlerJni.MsgQueueHandlerParam queueHandlerParam =
                 new MsgQueueHandlerJni.MsgQueueHandlerParam(8192,
                         new MsgQueueHandlerJni.OnReceiveMsgListener() {
-                    @Override
-                    public int handleMsg(final int what, final int arg1, final int arg2,
-                                         final byte[] obj, final int objLen) {
-                        // mock doing heavy task
-                        SystemClock.sleep(5 + random.nextInt(10));
-                        SLog.i("received event: what=%d, arg1=%d, arg2=%d, obj_len=%d. " +
-                                        " last_byte_in_obj=%d",
-                                what, arg1, arg2, objLen,
-                                (null == obj || objLen <= arg2) ? -9999 : (int)(obj[arg2]));
-                        return 0;
-                    }
-                });
+                            @Override
+                            public int handleMsg(final int what, final int arg1, final int arg2,
+                                                 final byte[] obj, final int objLen) {
+                                // mock doing heavy task
+                                SystemClock.sleep(5 + random.nextInt(10));
+                                SLog.i("received event: what=%d, arg1=%d, arg2=%d, obj_len=%d. " +
+                                                " last_byte_in_obj=%d",
+                                        what, arg1, arg2, objLen,
+                                        (null == obj || objLen <= arg2) ? -9999 : (int) (obj[arg2]));
+                                return 0;
+                            }
+                        });
 
         return new MsgQueueHandlerJni.Helper(queueHandlerParam);
     }

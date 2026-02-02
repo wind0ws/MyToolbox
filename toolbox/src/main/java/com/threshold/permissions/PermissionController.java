@@ -1,16 +1,14 @@
 package com.threshold.permissions;
 
 import android.app.Activity;
-import androidx.annotation.NonNull;
-
 import android.content.Intent;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.threshold.toolbox.R;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import com.threshold.toolbox.R;
 
 /**
  * Simple permission controller, help you request app permission from user.
@@ -99,9 +97,18 @@ public class PermissionController {
         return mPermissionManager.checkPermissions(activity);
     }
 
-    // call it at Activity.onActivityResult
-    public void resolveActivityResult(@NotNull final Activity activity, final int requestCode,
+    /** Returns true if all permissions that will be requested are already granted. */
+    public boolean isAllPermissionGranted(Activity activity) {
+        PermissionManager.PermissionStatus status = mPermissionManager.checkPermissions(activity);
+        return status != null && status.denied.isEmpty();
+    }
+
+    /** Call from Activity.onActivityResult. */
+    public void resolveActivityResult(@NonNull final Activity activity, final int requestCode,
                                       final int resultCode, @Nullable final Intent data) {
+        if (activity.isFinishing()) {
+            return;
+        }
         mPermissionManager.checkActivityResult(activity, requestCode, resultCode, data);
     }
 
@@ -116,8 +123,8 @@ public class PermissionController {
             return;
         }
         if (!status.denied.isEmpty()) {
-            for (int i = 0; i < status.denied.size(); ++i) {
-                Log.e(TAG, "you denied: " + status.denied.get(i));
+            for (String denied : status.denied) {
+                Log.e(TAG, "you denied: " + denied);
             }
             return;
         }
