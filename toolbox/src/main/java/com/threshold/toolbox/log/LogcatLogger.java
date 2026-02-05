@@ -20,12 +20,27 @@ public class LogcatLogger extends AbsLogger {
         this.mStackTraceOffset = 5 + methodOffset;
     }
 
+    /**
+     * 在连续多帧栈上查找 TAG，避免在 Android 仪器测试等环境下因调用栈更深导致取到运行器类而非实际调用类。
+     * 先尝试固定偏移的一帧，若无 TAG 则向后尝试若干帧，取第一个非空 TAG。
+     */
+    private static final int STACK_SEARCH_WINDOW = 5;
+
     @Override
     protected String currentLogTag() {
         String currentTag = super.currentLogTag();
         if (TextUtils.isEmpty(currentTag)) {
-            final StackTraceElement traceElement = TraceUtil.getStackTrace(mStackTraceOffset);
-            currentTag = TagFinder.findTag(traceElement);
+            final StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+            for (int i = 0; i < STACK_SEARCH_WINDOW; i++) {
+                int index = mStackTraceOffset + i;
+                if (index >= stack.length) {
+                    break;
+                }
+                currentTag = TagFinder.findTag(stack[index]);
+                if (!TextUtils.isEmpty(currentTag)) {
+                    break;
+                }
+            }
             if (TextUtils.isEmpty(currentTag)) {
                 currentTag = "NO_TAG";
             }

@@ -21,8 +21,10 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.CRC32;
 
-/** @noinspection BooleanMethodIsAlwaysInverted */
-@SuppressWarnings({ "unused", "IOStreamConstructor" })
+/**
+ * @noinspection BooleanMethodIsAlwaysInverted
+ */
+@SuppressWarnings({"unused", "IOStreamConstructor"})
 public class AssetsUtil {
 
     public enum CopyMode {
@@ -63,7 +65,7 @@ public class AssetsUtil {
             return -1;
         }
 
-        final long[] receiveAssetSize = { -1 };
+        final long[] receiveAssetSize = {-1};
         int ret = AssetsJni.getResSize(assetManager, assetFilePath, receiveAssetSize);
         if (0 != ret) {
             Log.e(TAG, "Failed to get asset size: " + assetFilePath + ", error=" + ret);
@@ -72,17 +74,17 @@ public class AssetsUtil {
     }
 
     public static boolean copyAssetFile(@NonNull Context context,
-            @NonNull CopyMode copyMode,
-            @NonNull String fromAssetFilePath,
-            @NonNull String toFilePath) {
+                                        @NonNull CopyMode copyMode,
+                                        @NonNull String fromAssetFilePath,
+                                        @NonNull String toFilePath) {
         return copyAssetFile(context, context.getAssets(), copyMode, fromAssetFilePath, toFilePath);
     }
 
     public static boolean copyAssetFile(@NonNull Context context,
-            @NonNull AssetManager assetManager,
-            @NonNull CopyMode copyMode,
-            @NonNull String fromAssetFilePath,
-            @NonNull String toFilePath) {
+                                        @NonNull AssetManager assetManager,
+                                        @NonNull CopyMode copyMode,
+                                        @NonNull String fromAssetFilePath,
+                                        @NonNull String toFilePath) {
         if (fromAssetFilePath.isEmpty() || toFilePath.isEmpty()) {
             Log.e(TAG, "Empty paths not allowed");
             return false;
@@ -127,9 +129,9 @@ public class AssetsUtil {
     // ======================== Folder Operations ========================
 
     public static boolean copyAssetFolder(@NonNull Context context,
-            @NonNull CopyMode copyMode,
-            @NonNull String fromAssetFolderPath,
-            @NonNull String destinationFolderPath) {
+                                          @NonNull CopyMode copyMode,
+                                          @NonNull String fromAssetFolderPath,
+                                          @NonNull String destinationFolderPath) {
         return copyAssetFolder(context, context.getAssets(), copyMode,
                 fromAssetFolderPath, destinationFolderPath);
     }
@@ -153,10 +155,10 @@ public class AssetsUtil {
     }
 
     public static boolean copyAssetFolder(@NonNull Context context,
-            @NonNull AssetManager assetManager,
-            @NonNull CopyMode copyMode,
-            @NonNull String fromAssetFolderPath,
-            @NonNull String destinationFolderPath) {
+                                          @NonNull AssetManager assetManager,
+                                          @NonNull CopyMode copyMode,
+                                          @NonNull String fromAssetFolderPath,
+                                          @NonNull String destinationFolderPath) {
         if (fromAssetFolderPath.isEmpty() || destinationFolderPath.isEmpty()) {
             Log.e(TAG, "Empty paths not allowed");
             return false;
@@ -185,7 +187,7 @@ public class AssetsUtil {
 
             final String[] assets = assetManager.list(fromAssetFolderPath);
             if (null == assets || 0 == assets.length) {
-                Log.w(TAG, "Empty or invalid assets folder: " + fromAssetFolderPath);
+                //Log.w(TAG, "Empty or invalid assets folder: " + fromAssetFolderPath);
                 return true; // Treat as success
             }
 
@@ -211,10 +213,10 @@ public class AssetsUtil {
 
     // ======================== Helper Methods ========================
     private static boolean shouldSkipCopy(Context context,
-            AssetManager assetManager,
-            String assetPath,
-            File destFile,
-            CopyMode mode) throws IOException {
+                                          AssetManager assetManager,
+                                          String assetPath,
+                                          File destFile,
+                                          CopyMode mode) throws IOException {
         if (!destFile.exists()) {
             return false; // Need to copy
         }
@@ -325,7 +327,7 @@ public class AssetsUtil {
     }
 
     private static boolean verifyContentMatch(AssetManager am,
-            String assetPath, File file) throws IOException {
+                                              String assetPath, File file) throws IOException {
         final long assetCrc = calculateAssetCrc(am, assetPath);
         final long fileCrc = calculateFileCrc(file);
         return assetCrc == fileCrc;
@@ -384,11 +386,11 @@ public class AssetsUtil {
     }
 
     private static long copyAssetStream(AssetManager assetManager,
-            String assetPath, File destFile,
-            long apkUpdateTime,
-            boolean computeCrc) throws IOException {
+                                        String assetPath, File destFile,
+                                        long apkUpdateTime,
+                                        boolean computeCrc) throws IOException {
         // Use a temporary file to ensure atomic write
-        File tempFile = new File(destFile.getParent(), destFile.getName() + ".tmp");
+        final File tempFile = new File(destFile.getParent(), destFile.getName() + ".tmp");
         // Ensure temp file does not exist
         if (tempFile.exists() && !tempFile.delete()) {
             throw new IOException("Failed to delete temp file: " + tempFile.getPath());
@@ -398,8 +400,8 @@ public class AssetsUtil {
         final byte[] buffer = new byte[BUFFER_SIZE];
 
         try (InputStream in = assetManager.open(assetPath);
-                FileOutputStream fos = new FileOutputStream(tempFile);
-                BufferedOutputStream out = new BufferedOutputStream(fos, BUFFER_SIZE)) {
+             FileOutputStream fos = new FileOutputStream(tempFile);
+             BufferedOutputStream out = new BufferedOutputStream(fos, BUFFER_SIZE)) {
 
             int bytesRead;
             while ((bytesRead = in.read(buffer)) != -1) {
@@ -417,8 +419,6 @@ public class AssetsUtil {
                 Log.e(TAG, "Failed to force temp file to disk: " + tempFile.getPath(), forceError);
                 throw forceError;
             }
-
-            Log.d(TAG, "Copied asset to temp: " + assetPath + " → " + tempFile.getPath());
         } catch (IOException e) {
             Log.e(TAG, "Error copying asset stream: " + assetPath, e);
             // Clean up temp file
@@ -430,6 +430,7 @@ public class AssetsUtil {
 
         // Atomically move temp file to destination (on Windows, renameTo may fail if dest exists)
         if (!tempFile.renameTo(destFile)) {
+            //noinspection StatementWithEmptyBody
             if (destFile.exists() && destFile.delete() && tempFile.renameTo(destFile)) {
                 // Fallback succeeded
             } else {
@@ -442,17 +443,34 @@ public class AssetsUtil {
 
         if (destFile.exists()) {
             normalizeFileTimestamp(destFile, apkUpdateTime);
+            Log.d(TAG, "Succeed copied: " + assetPath + " → " + destFile.getPath());
         }
         return crc != null ? crc.getValue() : INVALID_CACHE_VALUE;
     }
 
-    /** 空目录也视为目录：list(path) 对目录返回非 null（可为空数组），对文件返回 null。 */
+    /**
+     * 判断 asset 路径是目录还是文件。
+     * 部分实现中 list(文件路径) 返回空数组而非 null，故需在 list.length==0 时用 open() 二次判断。
+     */
     private static boolean isAssetDirectory(AssetManager am, String path) throws IOException {
         final String[] list = am.list(path);
-        return list != null;
+        if (list == null) {
+            return false; // 文件或无效路径
+        }
+        if (list.length > 0) {
+            return true; // 有子项，必为目录
+        }
+        // list.length == 0：可能是空目录，也可能是文件（部分系统对文件返回 []）
+        try (InputStream ignored = am.open(path)) {
+            return false; // 能按文件打开，则为文件
+        } catch (IOException e) {
+            return true; // 无法按文件打开，视为空目录
+        }
     }
 
-    /** 规范拼接 asset 路径，避免 "a/b" + "/" + "c" 产生 "a/b//c"。 */
+    /**
+     * 规范拼接 asset 路径，避免 "a/b" + "/" + "c" 产生 "a/b//c"。
+     */
     private static String joinAssetPath(String basePath, String name) {
         if (basePath == null || basePath.isEmpty()) {
             return name;
@@ -518,8 +536,8 @@ public class AssetsUtil {
     }
 
     private static long getOrComputeAssetCrc(AssetManager assetManager,
-            String assetPath,
-            SharedPreferences prefs) throws IOException {
+                                             String assetPath,
+                                             SharedPreferences prefs) throws IOException {
         if (assetManager == null || assetPath == null || prefs == null) {
             return INVALID_CACHE_VALUE;
         }
@@ -596,15 +614,15 @@ public class AssetsUtil {
 
     @Nullable
     public static String readString(AssetManager assetManager,
-            String fileNamePath,
-            String charset) {
+                                    String fileNamePath,
+                                    String charset) {
         if (assetManager == null || fileNamePath == null || charset == null) {
             Log.e(TAG, "Invalid params for readString");
             return null;
         }
 
         try (InputStream is = assetManager.open(fileNamePath);
-                ByteArrayOutputStream result = new ByteArrayOutputStream(BUFFER_SIZE * 2)) {
+             ByteArrayOutputStream result = new ByteArrayOutputStream(BUFFER_SIZE * 2)) {
 
             copyStream(is, result);
             return result.toString(charset);
@@ -624,7 +642,7 @@ public class AssetsUtil {
 
         try (InputStream is = new BufferedInputStream(
                 assetManager.open(fileNamePath));
-                ByteArrayOutputStream buffer = new ByteArrayOutputStream(BUFFER_SIZE * 16)) {
+             ByteArrayOutputStream buffer = new ByteArrayOutputStream(BUFFER_SIZE * 16)) {
 
             copyStream(is, buffer);
             return buffer.toByteArray();
